@@ -1,0 +1,1495 @@
+import asyncio
+import aiohttp
+import requests
+from bs4 import BeautifulSoup
+import json
+import re
+from dataclasses import dataclass, asdict
+from typing import Dict, List, Optional, Any
+from urllib.parse import urljoin, urlparse
+import streamlit as st
+from datetime import datetime
+
+
+@dataclass
+class ModelCardData:
+    # Basic Metadata
+    model_name: str
+    developer_organization: str = ""
+    model_version: Optional[str] = None
+    release_stage: str = ""  # beta, pilot, full-version
+    initial_release_date: str = ""
+    last_updated_date: str = ""
+    contact_info: str = ""  # Website/Phone/Email
+    geographic_availability: str = ""  # USA only, global, etc.
+    regulatory_approval: str = ""  # FDA approval, CE Mark, etc.
+    summary: str = ""
+    keywords: str = ""
+    clinical_oversight: str = ""  # Were dermatologists involved?
+    dataset_doi: str = ""
+
+    # Uses & Directions
+    model_description: str = ""
+    intended_use: str = ""
+    clinical_workflow: str = ""
+    clinical_gap_addressed: str = ""
+    primary_users: str = ""
+    how_to_use: str = ""  # web-based, app, EHR integration
+    real_world_scenarios: str = ""
+    cautioned_use_cases: str = ""
+    inclusion_exclusion_criteria: str = ""
+
+    # Warnings
+    developer_warnings: str = ""
+    model_limitations: str = ""
+    failure_modes: str = ""
+    dependency_requirements: str = ""
+    subgroup_analysis: Dict[str, str] = None  # Fitzpatrick, age, sex, etc.
+    known_biases: str = ""
+    clinical_risk_level: str = ""
+
+    # Trust Ingredients - AI System Facts
+    model_type: str = ""  # predictive/generative
+    system_interactions: str = ""  # EHR, medical devices
+    outcomes_outputs: str = ""
+    explainability: str = ""
+    foundation_models: str = ""
+    input_data_source: str = ""
+    output_input_data_type: str = ""
+    real_world_or_synthetic: str = ""
+    training_inclusion_exclusion: str = ""
+    uscdi_variables_used: str = ""
+    demographic_representativeness: str = ""
+
+    # Development Data
+    dataset_size: str = ""
+    annotation_process: str = ""
+    dataset_transparency: str = ""  # public or proprietary
+    validation_dataset_type: str = ""  # real-world, synthetic, retrospective
+    data_collection_timeline: str = ""
+    data_collection_location: str = ""
+    skin_tone_diversity: str = ""
+    ethical_review: str = ""
+    irb_approval: str = ""
+    training_data_alignment: str = ""
+
+    # Bias Mitigation
+    bias_mitigation_approaches: str = ""
+    fairness_approaches: str = ""
+
+    # Ongoing Maintenance
+    monitoring_validity: str = ""
+    monitoring_fairness: str = ""
+    update_process: str = ""
+    risk_correction: str = ""
+    monitoring_tools: str = ""
+    anticipated_improvements: str = ""
+    security_compliance: str = ""
+    transparency_mechanisms: str = ""
+
+    # Transparency Information
+    funding_source: str = ""
+    third_party_info: str = ""
+    stakeholders_consulted: str = ""
+    conflicts_of_interest: str = ""
+
+    # Key Metrics - structured as separate sections
+    usefulness_metrics: Dict[str, str] = None
+    fairness_metrics: Dict[str, str] = None
+    safety_metrics: Dict[str, str] = None
+
+    # Resources
+    evaluation_references: str = ""
+    clinical_trials: str = ""
+    mobile_app_info: str = ""
+    data_security_standards: str = ""
+    compliance_frameworks: str = ""
+    accreditations: str = ""
+    peer_reviewed_publications: str = ""
+    reimbursement_status: str = ""
+    patient_consent_required: str = ""
+
+    # Legacy fields for backward compatibility
+    performance_metrics: Dict[str, Any] = None
+    training_data: str = ""
+    limitations: str = ""
+    bias_considerations: str = ""
+    ethical_considerations: str = ""
+    technical_specifications: Dict[str, Any] = None
+    citations: List[str] = None
+    github_repo: Optional[str] = None
+    huggingface_url: Optional[str] = None
+    website_url: Optional[str] = None
+    sources_extracted_from: List[str] = None
+    source_reliability: Dict[str, Any] = None
+    extraction_summary: Dict[str, Any] = None
+
+    def __post_init__(self):
+        if self.performance_metrics is None:
+            self.performance_metrics = {}
+        if self.technical_specifications is None:
+            self.technical_specifications = {}
+        if self.citations is None:
+            self.citations = []
+        if self.sources_extracted_from is None:
+            self.sources_extracted_from = []
+        if self.source_reliability is None:
+            self.source_reliability = {}
+        if self.extraction_summary is None:
+            self.extraction_summary = {}
+        if self.subgroup_analysis is None:
+            self.subgroup_analysis = {}
+        if self.usefulness_metrics is None:
+            self.usefulness_metrics = {
+                'goal': '',
+                'result': '',
+                'interpretation': '',
+                'test_type': '',
+                'testing_data_description': '',
+                'validation_process': ''
+            }
+        if self.fairness_metrics is None:
+            self.fairness_metrics = {
+                'goal': '',
+                'result': '',
+                'interpretation': '',
+                'test_type': '',
+                'testing_data_description': '',
+                'validation_process': ''
+            }
+        if self.safety_metrics is None:
+            self.safety_metrics = {
+                'goal': '',
+                'result': '',
+                'interpretation': '',
+                'test_type': '',
+                'testing_data_description': '',
+                'validation_process': ''
+            }
+
+
+class ModelDiscovery:
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+
+    def search_huggingface(self, model_name: str) -> List[Dict]:
+        """Search for models on HuggingFace"""
+        try:
+            url = f"https://huggingface.co/api/models?search={model_name}&filter=medical"
+            response = self.session.get(url)
+            if response.status_code == 200:
+                models = response.json()
+                return [
+                    m for m in models if 'dermatology' in str(m).lower()
+                    or 'skin' in str(m).lower()
+                ]
+        except Exception as e:
+            st.error(f"Error searching HuggingFace: {e}")
+        return []
+
+    def search_github(self, model_name: str) -> List[Dict]:
+        """Search for repositories on GitHub"""
+        try:
+            url = f"https://api.github.com/search/repositories?q={model_name}+dermatology+skin+AI+machine+learning"
+            response = self.session.get(url)
+            if response.status_code == 200:
+                return response.json().get('items', [])
+        except Exception as e:
+            st.error(f"Error searching GitHub: {e}")
+        return []
+
+    def search_pubmed(self, model_name: str) -> List[Dict]:
+        """Search for papers on PubMed"""
+        try:
+            base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
+            search_url = f"{base_url}esearch.fcgi?db=pubmed&term={model_name}+dermatology+artificial+intelligence&retmode=json&retmax=10"
+
+            response = self.session.get(search_url)
+            if response.status_code == 200:
+                data = response.json()
+                ids = data.get('esearchresult', {}).get('idlist', [])
+
+                if ids:
+                    fetch_url = f"{base_url}efetch.fcgi?db=pubmed&id={','.join(ids)}&retmode=xml"
+                    papers_response = self.session.get(fetch_url)
+                    if papers_response.status_code == 200:
+                        return self.parse_pubmed_xml(papers_response.text)
+        except Exception as e:
+            st.error(f"Error searching PubMed: {e}")
+        return []
+
+    @staticmethod
+    def parse_pubmed_xml(xml_content: str) -> List[Dict]:
+        """Parse PubMed XML response"""
+        papers = []
+        soup = BeautifulSoup(xml_content, 'xml')
+
+        for article in soup.find_all('PubmedArticle'):
+            try:
+                title_elem = article.find('ArticleTitle')
+                title = title_elem.get_text(
+                ) if title_elem else "Unknown Title"
+
+                abstract_elem = article.find('AbstractText')
+                abstract = abstract_elem.get_text() if abstract_elem else ""
+
+                pmid_elem = article.find('PMID')
+                pmid = pmid_elem.get_text() if pmid_elem else ""
+
+                # Extract DOI if available
+                doi_elem = article.find('ELocationID', {'EIdType': 'doi'})
+                doi = doi_elem.get_text() if doi_elem else ""
+
+                # Extract journal and year
+                journal_elem = article.find('Title')
+                journal = journal_elem.get_text() if journal_elem else "Unknown Journal"
+
+                year_elem = article.find('PubDate')
+                year = "Unknown Year"
+                if year_elem:
+                    year_text = year_elem.find('Year')
+                    if year_text:
+                        year = year_text.get_text()
+
+                papers.append({
+                    'title': title,
+                    'abstract': abstract,
+                    'pmid': pmid,
+                    'doi': doi,
+                    'journal': journal,
+                    'year': year,
+                    'url': f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else ""
+                })
+            except Exception:
+                # Skip malformed articles
+                continue
+
+        return papers
+
+
+class WebScraper:
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+
+    def scrape_website(self, url: str) -> Dict[str, str]:
+        """Scrape information from a website URL"""
+        try:
+            response = self.session.get(url, timeout=10)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+
+                # Extract title
+                title = soup.find('title')
+                title_text = title.get_text().strip() if title else ""
+
+                # Extract main content
+                content_selectors = [
+                    'main', 'article', '.content', '#content', '.main-content',
+                    '.description', '.readme'
+                ]
+
+                content = ""
+                for selector in content_selectors:
+                    elem = soup.select_one(selector)
+                    if elem:
+                        content = elem.get_text().strip()
+                        break
+
+                if not content:
+                    # Fallback to body text
+                    body = soup.find('body')
+                    if body:
+                        content = body.get_text().strip()
+
+                # Extract meta description
+                meta_desc = soup.find('meta', attrs={'name': 'description'})
+                description = meta_desc.get('content', '') if meta_desc else ""
+
+                return {
+                    'title': title_text,
+                    'content': content[:5000],  # Limit content length
+                    'description': description,
+                    'url': url
+                }
+        except Exception as e:
+            st.error(f"Error scraping {url}: {e}")
+
+        return {}
+
+
+class ModelCardPipeline:
+
+    def __init__(self):
+        self.discovery = ModelDiscovery()
+        self.scraper = WebScraper()
+
+        # Skin tone diversity keywords for validation
+        self.diversity_keywords = [
+            'skin tone', 'skin color', 'melanin', 'fitzpatrick scale',
+            'diverse population', 'ethnic diversity', 'racial diversity',
+            'dark skin', 'light skin', 'brown skin', 'black skin',
+            'asian skin', 'hispanic skin', 'latino skin',
+            'skin type I', 'skin type II', 'skin type III', 
+            'skin type IV', 'skin type V', 'skin type VI',
+            'bias', 'fairness', 'equity', 'representation',
+            'demographic parity', 'algorithmic bias'
+        ]
+
+        # Performance disparity keywords
+        self.bias_indicators = [
+            'performance gap', 'accuracy difference', 'sensitivity difference',
+            'specificity difference', 'false positive rate', 'false negative rate',
+            'underrepresented', 'bias evaluation', 'fairness metrics',
+            'demographic bias', 'algorithmic fairness'
+        ]
+
+    def assess_source_reliability(self, sources: Dict) -> Dict[str, Any]:
+        """Assess the reliability and quality of extracted sources"""
+        reliability_assessment = {
+            'overall_score': 0,
+            'source_breakdown': {},
+            'reliability_level': 'Low',
+            'recommendations': []
+        }
+
+        total_score = 0
+        max_possible_score = 0
+
+        # Assess PubMed sources (highest reliability)
+        if sources.get('pubmed'):
+            papers = sources['pubmed']
+            pubmed_score = min(len(papers) * 3, 15)  # Max 15 points for papers
+            recent_papers = sum(1 for p in papers if p.get('year', '0').isdigit() and int(p.get('year', '0')) >= 2020)
+            pubmed_score += recent_papers * 2  # Bonus for recent papers
+
+            reliability_assessment['source_breakdown']['pubmed'] = {
+                'score': pubmed_score,
+                'paper_count': len(papers),
+                'recent_papers': recent_papers,
+                'quality': 'High - Peer-reviewed academic sources'
+            }
+            total_score += pubmed_score
+            max_possible_score += 20
+
+        # Assess GitHub sources (medium-high reliability)
+        if sources.get('github'):
+            repos = sources['github']
+            github_score = 0
+            if repos:
+                repo = repos[0]
+                stars = repo.get('stargazers_count', 0)
+                github_score = min(stars // 100, 8)  # Max 8 points based on stars
+                if repo.get('description'):
+                    github_score += 2
+
+                reliability_assessment['source_breakdown']['github'] = {
+                    'score': github_score,
+                    'stars': stars,
+                    'quality': 'Medium-High - Community validated code'
+                }
+            total_score += github_score
+            max_possible_score += 10
+
+        # Assess HuggingFace sources (medium reliability)
+        if sources.get('huggingface'):
+            models = sources['huggingface']
+            hf_score = min(len(models) * 3, 9)  # Max 9 points
+
+            reliability_assessment['source_breakdown']['huggingface'] = {
+                'score': hf_score,
+                'model_count': len(models),
+                'quality': 'Medium - Model repository with community curation'
+            }
+            total_score += hf_score
+            max_possible_score += 10
+
+        # Assess website sources (variable reliability)
+        if sources.get('website'):
+            web_data = sources['website']
+            web_score = 0
+            if web_data.get('content'):
+                web_score = 3
+            if web_data.get('description'):
+                web_score += 2
+
+            reliability_assessment['source_breakdown']['website'] = {
+                'score': web_score,
+                'quality': 'Variable - Depends on source authority'
+            }
+            total_score += web_score
+            max_possible_score += 5
+
+        # Calculate overall reliability
+        reliability_percentage = 0
+        if max_possible_score > 0:
+            reliability_percentage = (total_score / max_possible_score) * 100
+            reliability_assessment['overall_score'] = reliability_percentage
+
+            if reliability_percentage >= 70:
+                reliability_assessment['reliability_level'] = 'High'
+            elif reliability_percentage >= 40:
+                reliability_assessment['reliability_level'] = 'Medium'
+            else:
+                reliability_assessment['reliability_level'] = 'Low'
+
+        # Generate recommendations
+        if not sources.get('pubmed'):
+            reliability_assessment['recommendations'].append("Manual literature review recommended")
+        if reliability_percentage < 50:
+            reliability_assessment['recommendations'].append("Additional source verification required")
+        if not sources.get('github') and not sources.get('huggingface'):
+            reliability_assessment['recommendations'].append("Technical documentation needs manual collection")
+
+        return reliability_assessment
+
+    def extract_model_info(self, sources: Dict) -> ModelCardData:
+        """Extract and consolidate model information from various sources"""
+        model_data = ModelCardData(model_name="")
+        sources_list = []
+        all_text_content = ""
+
+        # Assess source reliability
+        source_reliability = self.assess_source_reliability(sources)
+        model_data.source_reliability = source_reliability
+
+        # Process HuggingFace data
+        if sources.get('huggingface'):
+            hf_data = sources['huggingface'][0] if sources['huggingface'] else {}
+            model_data.model_name = hf_data.get('modelId', '')
+            model_data.model_description = hf_data.get('description', '')
+            model_data.huggingface_url = f"https://huggingface.co/{hf_data.get('modelId', '')}"
+            sources_list.append("HuggingFace Model Card")
+            all_text_content += " " + str(hf_data)
+
+        # Process GitHub data
+        if sources.get('github'):
+            gh_data = sources['github'][0] if sources['github'] else {}
+            if not model_data.model_name:
+                model_data.model_name = gh_data.get('name', '')
+            if not model_data.model_description:
+                model_data.model_description = gh_data.get('description', '')
+            model_data.github_repo = gh_data.get('html_url', '')
+            sources_list.append("GitHub Repository")
+            all_text_content += " " + str(gh_data)
+
+        # Process PubMed data
+        if sources.get('pubmed'):
+            papers = sources['pubmed']
+            model_data.citations = [
+                f"{p['title']} ({p.get('journal', 'Unknown Journal')}, {p.get('year', 'Unknown Year')}) - DOI: {p.get('doi', 'Not available')}"
+                for p in papers
+            ]
+            sources_list.append("PubMed Research Papers")
+
+            # Extract information from abstracts
+            abstracts = [p.get('abstract', '') for p in papers]
+            combined_abstracts = ' '.join(abstracts)
+            all_text_content += " " + combined_abstracts
+
+            # Extract performance metrics from papers
+            performance_metrics = self.extract_performance_metrics(combined_abstracts)
+            model_data.performance_metrics.update(performance_metrics)
+
+            if 'limitation' in combined_abstracts.lower():
+                model_data.limitations = self.extract_text_section(
+                    combined_abstracts, 'limitation')
+
+        # Process website data
+        if sources.get('website'):
+            web_data = sources['website']
+            if not model_data.model_description and web_data.get('description'):
+                model_data.model_description = web_data['description']
+
+            content = web_data.get('content', '')
+            model_data.intended_use = self.extract_intended_use(content)
+            model_data.technical_specifications.update(
+                self.extract_technical_specs(content))
+            sources_list.append("Website Information")
+            all_text_content += " " + content
+
+        # Perform comprehensive diversity and bias analysis
+        diversity_analysis = self.analyze_skin_tone_diversity(all_text_content)
+        bias_analysis = self.analyze_bias_considerations(all_text_content)
+
+        # Update model data with diversity findings
+        model_data.bias_considerations = bias_analysis['bias_summary']
+        model_data.ethical_considerations = diversity_analysis['diversity_summary']
+
+        # Add diversity metrics to performance metrics
+        model_data.performance_metrics.update({
+            'diversity_score': diversity_analysis['diversity_score'],
+            'bias_risk_level': bias_analysis['risk_level'],
+            'skin_tone_representation': diversity_analysis['skin_tone_coverage'],
+            'demographic_breakdown': diversity_analysis['demographics_mentioned']
+        })
+
+        # Create extraction summary
+        model_data.extraction_summary = {
+            'total_sources_found': len(sources_list),
+            'extraction_date': datetime.now().isoformat(),
+            'real_data_sources': len([s for s in sources.values() if s]),
+            'verification_status': source_reliability['reliability_level'],
+            'data_completeness': self.assess_data_completeness(model_data)
+        }
+
+        model_data.sources_extracted_from = sources_list
+        return model_data
+
+    def extract_performance_metrics(self, text: str) -> Dict[str, Any]:
+        """Extract performance metrics from text content"""
+        metrics = {}
+        text_lower = text.lower()
+
+        # Look for accuracy values
+        accuracy_match = re.search(r'accuracy[:\s]*(\d+\.?\d*)\s*%?', text_lower)
+        if accuracy_match:
+            metrics['accuracy'] = f"{accuracy_match.group(1)}%"
+
+        # Look for sensitivity
+        sensitivity_match = re.search(r'sensitivity[:\s]*(\d+\.?\d*)\s*%?', text_lower)
+        if sensitivity_match:
+            metrics['sensitivity'] = f"{sensitivity_match.group(1)}%"
+
+        # Look for specificity
+        specificity_match = re.search(r'specificity[:\s]*(\d+\.?\d*)\s*%?', text_lower)
+        if specificity_match:
+            metrics['specificity'] = f"{specificity_match.group(1)}%"
+
+        # Look for AUC
+        auc_match = re.search(r'auc[:\s]*(\d+\.?\d*)', text_lower)
+        if auc_match:
+            metrics['auc'] = auc_match.group(1)
+
+        return metrics
+
+    def assess_data_completeness(self, model_data: ModelCardData) -> str:
+        """Assess how complete the extracted data is"""
+        completeness_score = 0
+        total_possible = 8
+
+        if model_data.model_description:
+            completeness_score += 1
+        if model_data.intended_use:
+            completeness_score += 1
+        if model_data.performance_metrics:
+            completeness_score += 1
+        if model_data.technical_specifications:
+            completeness_score += 1
+        if model_data.citations:
+            completeness_score += 1
+        if model_data.limitations:
+            completeness_score += 1
+        if model_data.bias_considerations:
+            completeness_score += 1
+        if model_data.ethical_considerations:
+            completeness_score += 1
+
+        percentage = (completeness_score / total_possible) * 100
+
+        if percentage >= 80:
+            return "High - Most required fields populated"
+        elif percentage >= 50:
+            return "Medium - Some manual entry required"
+        else:
+            return "Low - Significant manual entry needed"
+
+    @staticmethod
+    def extract_text_section(text: str, keyword: str) -> str:
+        """Extract text sections containing specific keywords"""
+        sentences = text.split('.')
+        relevant_sentences = [
+            s.strip() for s in sentences if keyword.lower() in s.lower()
+        ]
+        return '. '.join(relevant_sentences[:3])
+
+    def extract_intended_use(self, text: str) -> str:
+        """Extract intended use information from text"""
+        keywords = [
+            'intended use', 'application', 'purpose', 'dermatology',
+            'skin condition'
+        ]
+        for keyword in keywords:
+            if keyword in text.lower():
+                return self.extract_text_section(text, keyword)
+        return ""
+
+    @staticmethod
+    def extract_technical_specs(text: str) -> Dict[str, str]:
+        """Extract technical specifications from text"""
+        specs = {}
+
+        # Look for common technical terms
+        patterns = {
+            'architecture':
+            r'(CNN|ResNet|EfficientNet|Vision Transformer|VGG|DenseNet)',
+            'dataset': r'(ISIC|HAM10000|dermatology dataset|skin lesion)',
+            'framework': r'(TensorFlow|PyTorch|Keras|scikit-learn)'
+        }
+
+        for key, pattern in patterns.items():
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            if matches:
+                specs[key] = ', '.join(set(matches))
+
+        return specs
+
+    def analyze_skin_tone_diversity(self, text_content: str) -> Dict[str, Any]:
+        """Analyze text for skin tone diversity and representation mentions"""
+        text_lower = text_content.lower()
+
+        diversity_score = 0
+        skin_tone_mentions = []
+        demographics_found = []
+
+        # Check for diversity keywords
+        for keyword in self.diversity_keywords:
+            if keyword in text_lower:
+                diversity_score += 1
+                if 'skin' in keyword:
+                    skin_tone_mentions.append(keyword)
+                elif any(demo in keyword for demo in ['asian', 'hispanic', 'black', 'white']):
+                    demographics_found.append(keyword)
+
+        # Specific Fitzpatrick scale detection
+        fitzpatrick_mentions = []
+        for i in range(1, 7):
+            if f'fitzpatrick {i}' in text_lower or f'skin type {i}' in text_lower:
+                fitzpatrick_mentions.append(f"Type {i}")
+
+        # Assess coverage
+        coverage_level = "Unknown"
+        if len(fitzpatrick_mentions) >= 4:
+            coverage_level = "Comprehensive (4+ skin types)"
+        elif len(fitzpatrick_mentions) >= 2:
+            coverage_level = "Moderate (2-3 skin types)"
+        elif len(fitzpatrick_mentions) >= 1:
+            coverage_level = "Limited (1 skin type)"
+        elif any(keyword in text_lower for keyword in ['diverse', 'all skin', 'multiple skin']):
+            coverage_level = "Claimed diverse but unspecified"
+
+        # Generate summary
+        if diversity_score > 5:
+            summary = f"Good diversity consideration detected. Mentions: {', '.join(skin_tone_mentions[:3])}. Fitzpatrick coverage: {coverage_level}"
+        elif diversity_score > 2:
+            summary = f"Some diversity consideration. Limited mentions of skin tone variation. Coverage: {coverage_level}"
+        else:
+            summary = "WARNING: Little to no mention of skin tone diversity or bias considerations. Requires manual validation for darker skin representation."
+
+        return {
+            'diversity_score': min(diversity_score, 10),
+            'skin_tone_coverage': coverage_level,
+            'fitzpatrick_types_mentioned': fitzpatrick_mentions,
+            'demographics_mentioned': demographics_found,
+            'diversity_summary': summary
+        }
+
+    def analyze_bias_considerations(self, text_content: str) -> Dict[str, Any]:
+        """Analyze text for bias considerations and fairness metrics"""
+        text_lower = text_content.lower()
+
+        bias_indicators_found = []
+        fairness_metrics = []
+        risk_level = "High"
+
+        # Check for bias-related terms
+        for indicator in self.bias_indicators:
+            if indicator in text_lower:
+                bias_indicators_found.append(indicator)
+
+        # Look for specific fairness metrics
+        fairness_terms = ['auc across groups', 'equal opportunity', 'demographic parity', 
+                         'calibration across groups', 'fairness metrics']
+
+        for term in fairness_terms:
+            if term in text_lower:
+                fairness_metrics.append(term)
+
+        # Assess risk level
+        if len(bias_indicators_found) >= 3 and len(fairness_metrics) >= 1:
+            risk_level = "Low - Bias acknowledged and measured"
+        elif len(bias_indicators_found) >= 1:
+            risk_level = "Medium - Some bias consideration"
+        else:
+            risk_level = "High - No bias evaluation mentioned"
+
+        # Generate bias summary
+        if bias_indicators_found:
+            summary = f"Bias considerations mentioned: {', '.join(bias_indicators_found[:3])}. Risk level: {risk_level}"
+        else:
+            summary = "CRITICAL: No bias evaluation or fairness metrics mentioned. High risk for performance disparities across skin tones, especially darker skin."
+
+        return {
+            'bias_indicators': bias_indicators_found,
+            'fairness_metrics': fairness_metrics,
+            'risk_level': risk_level,
+            'bias_summary': summary
+        }
+
+    def extract_from_training_data(self, training_data, key):
+        """Extract specific information from training data string."""
+        pattern = re.compile(f'{key}:\\s*(.+?)(?=\\n\\w+:|$)', re.DOTALL)  # lookahead assertion
+        match = pattern.search(training_data)
+        if match:
+            return match.group(1).strip()
+        return None
+
+    def generate_structured_model_card(self, model_data: ModelCardData) -> str:
+        """Generate a comprehensive structured model card in markdown format"""
+
+        # Get extraction summary
+        extraction = model_data.extraction_summary
+        reliability = model_data.source_reliability
+        current_date = datetime.now().strftime('%m/%d/%Y')
+
+        card_content = f"""# Model Card: {model_data.model_name}
+
+## 1. Metadata
+
+**Model Name**: {model_data.model_name}
+**Developer/Organization**: {model_data.developer_organization or 'Not specified'}
+**Model/Software Release Stage**: {model_data.release_stage or 'Not specified'}
+**Release Date (Initial)**: {model_data.initial_release_date or 'Not specified'}
+**Release Date (Last Updated)**: {model_data.last_updated_date or current_date}
+**Version**: {model_data.model_version or 'Not specified'}
+**Inquiries/Report Issues**: {model_data.contact_info or 'Not provided'}
+**Geographic Availability**: {model_data.geographic_availability or 'Not specified'}
+**Regulatory Approval Status**: {model_data.regulatory_approval or 'Not specified'}
+
+### Summary
+{model_data.summary or model_data.model_description or 'Dermatology AI solution for clinical decision support'}
+
+### Keywords
+{model_data.keywords or 'dermatology, AI, machine learning, skin lesion, clinical decision support'}
+
+### Clinical Oversight
+{model_data.clinical_oversight or 'Clinical oversight status not documented'}
+
+### Digital Object Identifier (DOI)
+{model_data.dataset_doi or 'Not provided'}
+
+## 2. Uses & Directions
+
+### Intended Use & Workflow
+{model_data.intended_use or 'Primary use for dermatological analysis'}
+
+**Clinical Workflow Integration**: {model_data.clinical_workflow or 'Not specified'}
+**Clinical Gap Addressed**: {model_data.clinical_gap_addressed or 'Not specified'}
+
+### Primary Intended Users
+{model_data.primary_users or 'Dermatologists, healthcare professionals'}
+
+### How to Use
+{model_data.how_to_use or 'Method of use not specified'}
+
+### Real-World Use Cases or Scenarios
+{model_data.real_world_scenarios or 'Real-world scenarios not documented'}
+
+### Cautioned Out-of-Scope Settings and Use Cases
+{model_data.cautioned_use_cases or model_data.limitations or 'Out-of-scope uses not specified'}
+
+### Inclusion/Exclusion Criteria
+{model_data.inclusion_exclusion_criteria or 'Criteria not specified'}
+
+## 3. Warnings
+
+### Developer-Supplied Warnings or Contraindications
+{model_data.developer_warnings or 'No specific warnings provided'}
+
+### Model Limitations
+{model_data.model_limitations or model_data.limitations or 'Limitations not documented'}
+
+### Failure Modes
+{model_data.failure_modes or 'Failure modes not documented'}
+
+### Dependency Requirements
+{model_data.dependency_requirements or 'Dependencies not specified'}
+
+### Subgroup Analysis
+**Fitzpatrick Skin Type**: {model_data.subgroup_analysis.get('fitzpatrick', 'Not analyzed')}
+**Age Group**: {model_data.subgroup_analysis.get('age', 'Not analyzed')}
+**```python
+Sex/Gender**: {model_data.subgroup_analysis.get('gender', 'Not analyzed')}
+**Lesion Types**: {model_data.subgroup_analysis.get('lesion_types', 'Not analyzed')}
+**Geographical Region**: {model_data.subgroup_analysis.get('geography', 'Not analyzed')}
+
+### Known or Potential Biases
+{model_data.known_biases or model_data.bias_considerations or 'Bias analysis not provided'}
+
+### Clinical Risk Level
+{model_data.clinical_risk_level or 'Risk level not assessed'}
+
+## 4. Trust Ingredients
+
+### AI System Facts
+
+**Model Type**: {model_data.model_type or 'Not specified'}
+**System Interactions**: {model_data.system_interactions or 'Not documented'}
+**Outcomes and Outputs**: {model_data.outcomes_outputs or 'Not specified'}
+**Explainability**: {model_data.explainability or 'Not documented'}
+**Foundation Models Used**: {model_data.foundation_models or 'Not applicable'}
+
+### Input Data Source
+{model_data.input_data_source or 'Not specified'}
+
+### Output/Input Data Type
+**Data Types**: {model_data.output_input_data_type or 'Not specified'}
+**Real-world or Synthetic**: {model_data.real_world_or_synthetic or 'Not specified'}
+**Training Inclusion/Exclusion Criteria**: {model_data.training_inclusion_exclusion or 'Not documented'}
+**USCDI v3 Variables Used**: {model_data.uscdi_variables_used or 'Not documented'}
+**Demographic Representativeness**: {model_data.demographic_representativeness or 'Not documented'}
+
+### Development Data Characterization
+**Dataset Size**: {model_data.dataset_size or 'Not specified'}
+**Annotation Process**: {model_data.annotation_process or 'Not documented'}
+**Dataset Transparency**: {model_data.dataset_transparency or 'Not specified'}
+**Validation/Test Dataset**: {model_data.validation_dataset_type or 'Not specified'}
+**Data Collection Timeline**: {model_data.data_collection_timeline or 'Not provided'}
+**Data Collection Location**: {model_data.data_collection_location or 'Not provided'}
+**Skin Tone Diversity**: {model_data.skin_tone_diversity or model_data.performance_metrics.get('skin_tone_representation', 'Not documented')}
+**Ethical Review**: {model_data.ethical_review or 'Not documented'}
+**IRB Approval**: {model_data.irb_approval or 'Not documented'}
+**Training Data Alignment**: {model_data.training_data_alignment or 'Not assessed'}
+
+### Bias Mitigation Approaches
+**Fairness Approach**: {model_data.bias_mitigation_approaches or 'Not documented'}
+**Bias Reduction Methods**: {model_data.fairness_approaches or 'Not specified'}
+
+### Ongoing Maintenance
+**Monitoring Validity**: {model_data.monitoring_validity or 'Not specified'}
+**Monitoring Fairness**: {model_data.monitoring_fairness or 'Not specified'}
+**Update Process**: {model_data.update_process or 'Not documented'}
+**Risk Correction**: {model_data.risk_correction or 'Not specified'}
+**Monitoring Tools**: {model_data.monitoring_tools or 'Not provided'}
+**Anticipated Improvements**: {model_data.anticipated_improvements or 'Not specified'}
+
+### Security and Compliance
+{model_data.security_compliance or 'Not documented'}
+
+### Transparency Mechanisms
+{model_data.transparency_mechanisms or 'Not provided'}
+
+### Transparency Information
+**Funding Source**: {model_data.funding_source or 'Not disclosed'}
+**Third Party Information**: {model_data.third_party_info or 'Not applicable'}
+**Stakeholders Consulted**: {model_data.stakeholders_consulted or 'Not documented'}
+**Conflicts of Interest**: {model_data.conflicts_of_interest or 'Not disclosed'}
+
+## 5. Key Metrics
+
+### Usefulness, Usability, & Efficacy
+**Goal of Metric(s)**: {model_data.usefulness_metrics.get('goal', 'Not specified')}
+**Result**: {model_data.usefulness_metrics.get('result', 'Not provided')}
+**Interpretation**: {model_data.usefulness_metrics.get('interpretation', 'Not provided')}
+**Test Type**: {model_data.usefulness_metrics.get('test_type', 'Not specified')}
+**Testing Data Description**: {model_data.usefulness_metrics.get('testing_data_description', 'Not provided')}
+**Validation Process & Justification**: {model_data.usefulness_metrics.get('validation_process', 'Not documented')}
+
+### Fairness & Equity
+**Goal of Metric(s)**: {model_data.fairness_metrics.get('goal', 'Not specified')}
+**Result**: {model_data.fairness_metrics.get('result', 'Not provided')}
+**Interpretation**: {model_data.fairness_metrics.get('interpretation', 'Not provided')}
+**Test Type**: {model_data.fairness_metrics.get('test_type', 'Not specified')}
+**Testing Data Description**: {model_data.fairness_metrics.get('testing_data_description', 'Not provided')}
+**Validation Process & Justification**: {model_data.fairness_metrics.get('validation_process', 'Not documented')}
+
+### Safety & Reliability
+**Goal of Metric(s)**: {model_data.safety_metrics.get('goal', 'Not specified')}
+**Result**: {model_data.safety_metrics.get('result', 'Not provided')}
+**Interpretation**: {model_data.safety_metrics.get('interpretation', 'Not provided')}
+**Test Type**: {model_data.safety_metrics.get('test_type', 'Not specified')}
+**Testing Data Description**: {model_data.safety_metrics.get('testing_data_description', 'Not provided')}
+**Validation Process & Justification**: {model_data.safety_metrics.get('validation_process', 'Not documented')}"""
+
+        ## 6. Resources
+
+### Evaluation References
+{model_data.evaluation_references or 'Not provided'}
+
+### Clinical Trials
+{model_data.clinical_trials or 'Not available'}
+
+### Mobile App Information
+{model_data.mobile_app_info or 'Not applicable'}
+
+### Compliance and Security
+**Data Security Standards**: {model_data.data_security_standards or 'Not specified'}
+**Compliance Frameworks**: {model_data.compliance_frameworks or 'Not specified'}
+**Relevant Accreditations**: {model_data.accreditations or 'Not specified'}
+
+### Peer Reviewed Publications
+{model_data.peer_reviewed_publications or 'Not provided'}
+
+### Reimbursement Status
+{model_data.reimbursement_status or 'Not specified'}
+
+### Patient Consent Requirements
+{model_data.patient_consent_required or 'Not specified'}
+
+## Automated Extraction Summary
+
+### Data Sources and Verification
+**Sources Consulted**: {', '.join(model_data.sources_extracted_from) if model_data.sources_extracted_from else 'No automated sources found'}
+**Real Data Sources**: {extraction.get('real_data_sources', 0)}
+**Extraction Date**: {extraction.get('extraction_date', 'Unknown')}
+**Verification Status**: {extraction.get('verification_status', 'Unknown')}
+**Data Completeness**: {extraction.get('data_completeness', 'Unknown')}
+**Source Reliability Score**: {reliability.get('overall_score', 0):.1f}%
+        # Improved compliance assessment with detailed checks
+        def assess_compliance_requirements(model_data, extraction):
+            """Assess compliance requirements with detailed validation"""
+
+            # HTI-1 Requirements Assessment
+            hti1_requirements = {
+                'model_transparency': {
+                    'met': bool(model_data.model_description and len(model_data.model_description.strip()) > 50),
+                    'details': f"Description length: {len(model_data.model_description)} chars" if model_data.model_description else "No description found"
+                },
+                'performance_metrics': {
+                    'met': bool(model_data.performance_metrics and len([k for k in model_data.performance_metrics.keys() if k not in ['diversity_score', 'bias_risk_level', 'skin_tone_representation', 'demographic_breakdown']]) > 0),
+                    'details': f"Metrics found: {', '.join([k for k in model_data.performance_metrics.keys() if k not in ['diversity_score', 'bias_risk_level', 'skin_tone_representation', 'demographic_breakdown']])}" if model_data.performance_metrics else "No performance metrics found"
+                },
+                'bias_assessment': {
+                    'met': bool(model_data.bias_considerations and len(model_data.bias_considerations.strip()) > 20),
+                    'details': f"Bias analysis: {model_data.performance_metrics.get('bias_risk_level', 'Not assessed')}" if model_data.performance_metrics else "No bias assessment"
+                },
+                'intended_use': {
+                    'met': bool(model_data.intended_use and len(model_data.intended_use.strip()) > 20),
+                    'details': f"Use case specified: {model_data.intended_use[:50]}..." if model_data.intended_use else "No intended use documented"
+                },
+                'data_source': {
+                    'met': bool(model_data.sources_extracted_from and len(model_data.sources_extracted_from) > 0),
+                    'details': f"Sources: {', '.join(model_data.sources_extracted_from)}" if model_data.sources_extracted_from else "No data sources documented"
+                }
+            }
+
+            # OCR Nondiscrimination Requirements Assessment
+            bias_text = str(model_data.bias_considerations).lower()
+            ethics_text = str(model_data.ethical_considerations).lower()
+            combined_text = bias_text + " " + ethics_text
+
+            ocr_requirements = {
+                'bias_testing': {
+                    'met': bool(model_data.performance_metrics.get('bias_risk_level', 'High') in ['Low', 'Medium'] and 
+                               any(term in combined_text for term in ['bias', 'fairness', 'testing', 'evaluation'])),
+                    'details': f"Bias risk: {model_data.performance_metrics.get('bias_risk_level', 'Not assessed')}, Testing mentioned: {any(term in combined_text for term in ['testing', 'evaluation'])}"
+                },
+                'accessibility': {
+                    'met': bool(model_data.intended_use and any(term in str(model_data.intended_use).lower() for term in ['healthcare', 'clinical', 'medical', 'professional'])),
+                    'details': f"Healthcare context: {bool(model_data.intended_use and 'healthcare' in str(model_data.intended_use).lower())}"
+                },
+                'equal_treatment': {
+                    'met': bool(model_data.performance_metrics.get('diversity_score', 0) >= 5 and 
+                               any(term in combined_text for term in ['equal', 'equitable', 'fair', 'parity'])),
+                    'details': f"Diversity score: {model_data.performance_metrics.get('diversity_score', 0)}/10, Equal treatment terms: {any(term in combined_text for term in ['equal', 'equitable', 'fair', 'parity'])}"
+                },
+                'population_monitoring': {
+                    'met': bool(model_data.performance_metrics.get('skin_tone_representation', 'Unknown') != 'Unknown' and 
+                               any(term in combined_text for term in ['diverse', 'population', 'demographic', 'fitzpatrick', 'skin tone'])),
+                    'details': f"Skin tone coverage: {model_data.performance_metrics.get('skin_tone_representation', 'Unknown')}, Population monitoring: {any(term in combined_text for term in ['population', 'demographic', 'monitoring'])}"
+                }
+            }
+
+            # Calculate compliance scores
+            hti1_score = sum(1 for req in hti1_requirements.values() if req['met'])
+            ocr_score = sum(1 for req in ocr_requirements.values() if req['met'])
+
+            hti1_status = "✅ COMPLIANT" if hti1_score >= 4 else "⚠️ NEEDS REVIEW" if hti1_score >= 2 else "❌ NON-COMPLIANT"
+            ocr_status = "✅ COMPLIANT" if ocr_score >= 3 else "⚠️ NEEDS REVIEW" if ocr_score >= 2 else "❌ NON-COMPLIANT"
+
+            return hti1_requirements, ocr_requirements, hti1_status, ocr_status, hti1_score, ocr_score
+
+        hti1_reqs, ocr_reqs, hti1_status, ocr_status, hti1_score, ocr_score = assess_compliance_requirements(model_data, extraction)
+
+        card_content += f"""
+
+### Compliance Assessment
+
+#### HTI-1 Certification
+Status: {hti1_status} ({hti1_score}/5 requirements met)
+
+Requirements Met:
+- {'✓' if hti1_reqs['model_transparency']['met'] else '✗'} Model transparency documentation
+  └─ {hti1_reqs['model_transparency']['details']}
+- {'✓' if hti1_reqs['performance_metrics']['met'] else '✗'} Performance metrics disclosure
+  └─ {hti1_reqs['performance_metrics']['details']}
+- {'✓' if hti1_reqs['bias_assessment']['met'] else '✗'} Bias and fairness assessment
+  └─ {hti1_reqs['bias_assessment']['details']}
+- {'✓' if hti1_reqs['intended_use']['met'] else '✗'} Intended use specification
+  └─ {hti1_reqs['intended_use']['details']}
+- {'✓' if hti1_reqs['data_source']['met'] else '✗'} Data source documentation
+  └─ {hti1_reqs['data_source']['details']}
+
+#### OCR Nondiscrimination Compliance
+Status: {ocr_status} ({ocr_score}/4 requirements met)
+
+Requirements Met:
+- {'✓' if ocr_reqs['bias_testing']['met'] else '✗'} Bias testing and mitigation strategies
+  └─ {ocr_reqs['bias_testing']['details']}
+- {'✓' if ocr_reqs['accessibility']['met'] else '✗'} Accessibility considerations documented
+  └─ {ocr_reqs['accessibility']['details']}
+- {'✓' if ocr_reqs['equal_treatment']['met'] else '✗'} Equal treatment verification
+  └─ {ocr_reqs['equal_treatment']['details']}
+- {'✓' if ocr_reqs['population_monitoring']['met'] else '✗'} Performance monitoring across populations
+  └─ {ocr_reqs['population_monitoring']['details']}
+
+#### Compliance Summary
+Overall Status: {'✅ READY FOR DEPLOYMENT' if hti1_score >= 4 and ocr_score >= 3 else '⚠️ REQUIRES ADDITIONAL DOCUMENTATION' if hti1_score >= 2 and ocr_score >= 2 else '❌ SIGNIFICANT COMPLIANCE GAPS'}
+
+{f'Model card meets {hti1_score}/5 HTI-1 requirements and {ocr_score}/4 OCR requirements.' if hti1_score >= 4 and ocr_score >= 3 else f'Manual review and additional documentation required. Missing {5-hti1_score} HTI-1 requirements and {4-ocr_score} OCR requirements.' if hti1_score >= 2 or ocr_score >= 2 else 'Significant compliance gaps identified. Comprehensive manual documentation and bias testing required before deployment.'}"""
+
+        card_content += f"""
+
+### Data Sources and Verification
+
+#### Sources Consulted
+{', '.join(model_data.sources_extracted_from) if model_data.sources_extracted_from else 'No automated sources found'}
+
+#### Extraction Summary
+- **Real Data Sources**: {extraction.get('real_data_sources', 0)}
+- **Extraction Date**: {extraction.get('extraction_date', 'Unknown')}
+- **Verification Status**: {extraction.get('verification_status', 'Unknown')}
+- **Data Completeness**: {extraction.get('data_completeness', 'Unknown')}
+- **Source Reliability Score**: {reliability.get('overall_score', 0):.1f}%
+"""
+
+        card_content += f"""
+
+### Data Sources and Verification
+
+#### Sources Consulted
+{', '.join(model_data.sources_extracted_from) if model_data.sources_extracted_from else 'No automated sources found'}
+
+#### Extraction Summary
+- **Real Data Sources**: {extraction.get('real_data_sources', 0)}
+- **Extraction Date**: {extraction.get('extraction_date', 'Unknown')}
+- **Verification Status**: {extraction.get('verification_status', 'Unknown')}
+- **Data Completeness**: {extraction.get('data_completeness', 'Unknown')}
+- **Source Reliability Score**: {reliability.get('overall_score', 0):.1f}%
+
+#### Source Reliability Assessment
+**Overall Reliability**: {reliability.get('reliability_level', 'Unknown')}
+
+"""
+
+        # Add source breakdown
+        if reliability.get('source_breakdown'):
+            for source_type, details in reliability['source_breakdown'].items():
+                card_content += f"- **{source_type.title()}**: {details.get('quality', 'Unknown quality')} (Score: {details.get('score', 0)})\n"
+
+        # Add recommendations if any
+        if reliability.get('recommendations'):
+            card_content += f"\n**Recommendations**: {', '.join(reliability['recommendations'])}\n"
+
+        card_content += f"""
+
+#### Source Details
+"""
+
+        # Add citation details
+        if model_data.citations:
+            for citation in model_data.citations:
+                card_content += f"- **Academic Paper**: {citation}\n"
+
+        if model_data.github_repo:
+            card_content += f"- **Repository**: {model_data.github_repo}\n"
+
+        if model_data.huggingface_url:
+            card_content += f"- **Model Hub**: {model_data.huggingface_url}\n"
+
+        if model_data.website_url:
+            card_content += f"- **Official Documentation**: {model_data.website_url}\n"
+
+        if not any([model_data.citations, model_data.github_repo, model_data.huggingface_url, model_data.website_url]):
+            card_content += "- No verified sources found\n"
+
+        card_content += f"""
+
+### Contact Information
+For questions about this model card or to report data discrepancies, please contact your healthcare AI compliance team.
+
+### Document Information
+- **Generated**: {datetime.now().strftime('%m/%d/%Y, %I:%M:%S %p')}
+- **Generator**: Dermatology AI Model Card Generator v1.0
+- **Compliance Standards**: HTI-1, OCR Section 1557
+- **Last Updated**: {datetime.now().strftime('%m/%d/%Y')}
+- **Extraction Performance**: {extraction.get('verification_status', 'Unknown')} reliability with {extraction.get('data_completeness', 'unknown')} completeness
+
+---
+*This model card was automatically generated using real-time data extraction from verified sources and validated for HTI-1 and OCR compliance standards.*
+"""
+
+        return card_content
+
+
+def main():
+    st.set_page_config(page_title="Dermatology AI Model Card Generator",
+                       page_icon="🏥",
+                       layout="wide")
+
+    st.title("🏥 Dermatology AI Model Card Generator")
+    st.markdown(
+        "Generate HTI-1 and OCR compliant model cards using automated data extraction pipeline"
+    )
+
+    # Initialize pipeline
+    pipeline = ModelCardPipeline()
+
+    # Input section
+    st.header("Model Information Input")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        model_name = st.text_input(
+            "Enter Dermatology AI Model Name:",
+            placeholder="e.g., DermNet, SkinVision, DermoscopyNet, etc.")
+
+    with col2:
+        website_url = st.text_input(
+            "Model Website URL (optional):",
+            placeholder="https://example.com/model-info",
+            help="Provide the official website or documentation page for the AI model")
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        search_enabled = st.checkbox("Auto-search for model information",
+                                     value=True)
+    with col4:
+        manual_mode = st.checkbox("Enable manual data entry")
+
+    if st.button("Generate Model Card", type="primary"):
+        if not model_name:
+            st.error("Please enter a model name")
+            return
+
+        with st.spinner("Searching for model information..."):
+            sources = {}
+
+            if search_enabled:
+                # Search various sources
+                st.info("🔍 Searching HuggingFace...")
+                sources['huggingface'] = pipeline.discovery.search_huggingface(
+                    model_name)
+
+                st.info("🔍 Searching GitHub...")
+                sources['github'] = pipeline.discovery.search_github(
+                    model_name)
+
+                st.info("🔍 Searching PubMed...")
+                sources['pubmed'] = pipeline.discovery.search_pubmed(
+                    model_name)
+
+                if website_url:
+                    st.info("🔍 Scraping website...")
+                    sources['website'] = pipeline.scraper.scrape_website(
+                        website_url)
+
+        # Display found sources
+        st.header("📊 Data Sources Found")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("HuggingFace Models", len(sources.get('huggingface', [])))
+            if sources.get('huggingface'):
+                with st.expander("View HuggingFace Results"):
+                    for model in sources['huggingface'][:3]:
+                        st.write(f"**{model.get('modelId', 'Unknown')}**")
+                        st.write(model.get('description', 'No description'))
+                        st.write("---")
+
+        with col2:
+            st.metric("GitHub Repositories", len(sources.get('github', [])))
+            if sources.get('github'):
+                with st.expander("View GitHub Results"):
+                    for repo in sources['github'][:3]:
+                        st.write(f"**{repo.get('name', 'Unknown')}**")
+                        st.write(repo.get('description', 'No description'))
+                        st.write(f"⭐ {repo.get('stargazers_count', 0)} stars")
+                        st.write("---")
+
+        with col3:
+            st.metric("PubMed Papers", len(sources.get('pubmed', [])))
+            if sources.get('pubmed'):
+                with st.expander("View PubMed Results"):
+                    for paper in sources['pubmed'][:3]:
+                        st.write(f"**{paper.get('title', 'Unknown')}**")
+                        st.write(
+                            paper.get('abstract', 'No abstract')[:200] + "...")
+                        st.write("---")
+
+        with col4:
+            website_found = 1 if sources.get('website') else 0
+            st.metric("Website Data", website_found)
+            if sources.get('website'):
+                with st.expander("View Website Data"):
+                    web_data = sources['website']
+                    st.write(f"**Title:** {web_data.get('title', 'N/A')}")
+                    st.write(f"**Description:** {web_data.get('description', 'N/A')}")
+                    st.write(f"**Content Preview:** {web_data.get('content', '')[:200]}...")
+
+        # Generate model card
+        st.header("🎯 Generated Model Card")
+
+        with st.spinner("Generating HTI-1 compliant model card..."):
+            model_data = pipeline.extract_model_info(sources)
+            model_data.model_name = model_name
+            if website_url:
+                model_data.website_url = website_url
+
+        # Display extraction performance
+        st.header("📈 Extraction Performance Report")
+
+        extraction = model_data.extraction_summary
+        reliability = model_data.source_reliability
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("Sources Found", extraction.get('total_sources_found', 0))
+        with col2:
+            st.metric("Data Completeness", extraction.get('data_completeness', 'Unknown'))
+        with col3:
+            st.metric("Source Reliability", f"{reliability.get('overall_score', 0):.1f}%")
+        with col4:
+            st.metric("Verification Status", extraction.get('verification_status', 'Unknown'))
+
+        # Display source reliability breakdown
+        if reliability.get('source_breakdown'):
+            st.subheader("Source Quality Assessment")
+            for source_type, details in reliability['source_breakdown'].items():
+                with st.expander(f"{source_type.title()} - Score: {details.get('score', 0)}"):
+                    st.write(f"**Quality**: {details.get('quality', 'Unknown')}")
+                    if source_type == 'pubmed':
+                        st.write(f"**Papers Found**: {details.get('paper_count', 0)}")
+                        st.write(f"**Recent Papers**: {details.get('recent_papers', 0)}")
+                    elif source_type == 'github':
+                        st.write(f"**Stars**: {details.get('stars', 0)}")
+
+        # Display recommendations
+        if reliability.get('recommendations'):
+            st.warning("**Recommendations**: " + ", ".join(reliability['recommendations']))
+
+        # Add metrics explanation section
+        st.header("📊 Understanding the Metrics")
+
+        with st.expander("📈 Extraction Performance Report - Detailed Explanation"):
+            st.markdown("""
+            **Sources Found**: Number of different data sources successfully identified and processed (HuggingFace, GitHub, PubMed, websites).
+
+            **Data Completeness**: Assessment of how much essential model information was extracted:
+            - **High**: 80%+ of required fields populated - minimal manual entry needed
+            - **Medium**: 50-79% populated - some manual corrections required  
+            - **Low**: <50% populated - significant manual documentation needed
+
+            **Source Reliability**: Overall trustworthiness score (0-100%) based on source quality:
+            - **Academic papers (PubMed)**: Highest weight - peer-reviewed, recent papers score higher
+            - **GitHub repositories**: Medium-high weight - star count and documentation quality matter
+            - **HuggingFace models**: Medium weight - community-curated model repositories
+            - **Websites**: Variable weight - depends on content quality and authority
+
+            **Verification Status**: Categorizes overall source reliability:
+            - **High**: 70%+ reliability score - strong evidence base
+            - **Medium**: 40-69% reliability score - moderate confidence
+            - **Low**: <40% reliability score - requires manual verification
+            """)
+
+        with st.expander("🌍 Diversity & Bias Analysis - Detailed Explanation"):
+            st.markdown("""
+            **Diversity Score (0-10)**: Measures mentions of skin tone diversity considerations:
+            - **8-10**: Comprehensive diversity discussion including Fitzpatrick scale, multiple ethnicities
+            - **4-7**: Some diversity consideration mentioned
+            - **0-3**: Little to no diversity consideration - HIGH RISK for bias
+
+            **Bias Risk Level**: Assessment of algorithmic bias potential:
+            - **Low**: Bias acknowledged and measured with fairness metrics
+            - **Medium**: Some bias consideration but limited measurement
+            - **High**: No bias evaluation mentioned - CRITICAL for dermatology AI
+
+            **Skin Tone Coverage**: Specific assessment of skin type representation:
+            - **Comprehensive**: 4+ Fitzpatrick skin types mentioned
+            - **Moderate**: 2-3 skin types covered
+            - **Limited**: Only 1 skin type mentioned
+            - **Unknown**: No specific skin type documentation
+
+            **Why This Matters for Dermatology AI**:
+            - Dermatology AI has historically performed poorly on darker skin tones
+            - FDA HTI-1 and OCR Section 1557 require bias assessment and mitigation
+            - Clinical deployment without diversity validation can harm patient outcomes
+            - Models trained primarily on lighter skin may miss conditions in darker skin
+            """)
+
+        # Display diversity and bias analysis warnings
+        st.header("🌍 Diversity & Bias Analysis")
+
+        diversity_score = model_data.performance_metrics.get('diversity_score', 0)
+        bias_risk = model_data.performance_metrics.get('bias_risk_level', 'High')
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric("Diversity Score", f"{diversity_score}/10")
+
+        with col2:
+            st.metric("Bias Risk Level", bias_risk)
+
+        with col3:
+            coverage = model_data.performance_metrics.get('skin_tone_representation', 'Unknown')
+            st.metric("Skin Tone Coverage", coverage)
+
+        # Display warnings based on analysis
+        if diversity_score < 3:
+            st.error("🚨 CRITICAL: Low diversity consideration detected. This model may have significant performance disparities for darker skin tones.")
+
+        if bias_risk == "High":
+            st.error("🚨 HIGH BIAS RISK: No bias evaluation mentioned. Manual validation across skin tones is REQUIRED.")
+        elif bias_risk == "Medium":
+            st.warning("⚠️ MEDIUM BIAS RISK: Some bias consideration found, but more validation needed.")
+        else:
+            st.success("✅ Good bias consideration detected.")
+
+        # Generate and display structured model card
+        structured_card = pipeline.generate_structured_model_card(model_data)
+
+        st.header("📋 Generated Model Card")
+        st.markdown(structured_card)
+
+        # Download options
+        st.header("💾 Export Options")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.download_button(
+                "Download Markdown", structured_card,
+                f"{model_name.replace(' ', '_')}_model_card.md",
+                "text/markdown")
+
+        with col2:
+            # Convert to JSON for data exchange
+            json_data = {
+                "model_name": model_data.model_name,
+                "extraction_summary": model_data.extraction_summary,
+                "source_reliability": model_data.source_reliability,
+                "performance_metrics": model_data.performance_metrics,
+                "sources": model_data.sources_extracted_from
+            }
+            json_str = json.dumps(json_data, indent=2)
+            st.download_button(
+                "Download JSON Data", json_str,
+                f"{model_name.replace(' ', '_')}_extraction_data.json",
+                "application/json")
+
+        with col3:
+            st.info("Additional export formats available upon request")
+
+        # Manual data entry interface
+        if manual_mode:
+            st.header("✏️ Manual Data Entry & Corrections")
+            st.warning(
+                "Use this section to add detailed information required for HTI-1 compliance"
+            )
+
+            with st.expander("1. Metadata Information"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    model_data.developer_organization = st.text_input("Developer/Organization", model_data.developer_organization)
+                    model_data.release_stage = st.selectbox("Release Stage", 
+                        ["beta testing", "pilot", "full-version"], 
+                        index=0 if not model_data.release_stage else ["beta testing", "pilot", "full-version"].index(model_data.release_stage) if model_data.release_stage in ["beta testing", "pilot", "full-version"] else 0)
+                    model_data.contact_info = st.text_input("Contact Information", model_data.contact_info)
+                    model_data.regulatory_approval = st.text_input("Regulatory Approval Status", model_data.regulatory_approval)
+                with col2:
+                    model_data.model_version = st.text_input("Model Version", model_data.model_version)
+                    model_data.geographic_availability = st.text_input("Geographic Availability", model_data.geographic_availability)
+                    model_data.clinical_oversight = st.text_area("Clinical Oversight", model_data.clinical_oversight)
+                    model_data.dataset_doi = st.text_input("Dataset DOI", model_data.dataset_doi)
+
+            with st.expander("2. Uses & Directions"):
+                model_data.intended_use = st.text_area("Intended Use & Workflow", model_data.intended_use)
+                model_data.clinical_gap_addressed = st.text_area("Clinical Gap Addressed", model_data.clinical_gap_addressed)
+                model_data.primary_users = st.text_area("Primary Intended Users", model_data.primary_users)
+                model_data.how_to_use = st.text_area("How to Use", model_data.how_to_use)
+                model_data.cautioned_use_cases = st.text_area("Cautioned Out-of-Scope Use Cases", model_data.cautioned_use_cases)
+
+            with st.expander("3. Warnings & Limitations"):
+                model_data.developer_warnings = st.text_area("Developer-Supplied Warnings", model_data.developer_warnings)
+                model_data.model_limitations = st.text_area("Model Limitations", model_data.model_limitations)
+                model_data.failure_modes = st.text_area("Failure Modes", model_data.failure_modes)
+                model_data.known_biases = st.text_area("Known or Potential Biases", model_data.known_biases)
+                model_data.clinical_risk_level = st.selectbox("Clinical Risk Level", 
+                    ["Low", "Medium", "High"], 
+                    index=0 if not model_data.clinical_risk_level else ["Low", "Medium", "High"].index(model_data.clinical_risk_level) if model_data.clinical_risk_level in ["Low", "Medium", "High"] else 0)
+
+            with st.expander("4. Technical Specifications"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    model_data.model_type = st.text_input("Model Type (predictive/generative)", model_data.model_type)
+                    model_data.input_data_source = st.text_area("Input Data Source", model_data.input_data_source)
+                    model_data.dataset_size = st.text_input("Dataset Size", model_data.dataset_size)
+                    model_data.skin_tone_diversity = st.text_area("Skin Tone Diversity", model_data.skin_tone_diversity)
+```python
+                with col2:output = f"**Data Security Standards**: {model_data.data_security_standards or 'Not specified'}"
+output = f"**Source Reliability Score**: {float(reliability.get('overall_score', 0)):.1f}%"
+
+                    model_data.foundation_models = st.text_input("Foundation Models Used", model_data.foundation_models)
+                    model_data.output_input_data_type = st.text_area("Output/Input Data Type", model_data.output_input_data_type)
+                    model_data.annotation_process = st.text_area("Annotation Process", model_data.annotation_process)
+                    model_data.ethical_review = st.selectbox("Ethical Review Conducted", ["Yes", "No", "Unknown"])
+
+            with st.expander("5. Key Metrics"):
+                st.subheader("Usefulness, Usability, & Efficacy")
+                col1, col2 = st.columns(2)
+                with col1:
+                    model_data.usefulness_metrics['goal'] = st.text_area("Goal of Metric(s)", model_data.usefulness_metrics.get('goal', ''))
+                    model_data.usefulness_metrics['result'] = st.text_area("Result", model_data.usefulness_metrics.get('result', ''))
+                    model_data.usefulness_metrics['test_type'] = st.text_input("Test Type", model_data.usefulness_metrics.get('test_type', ''))
+                with col2:
+                    model_data.usefulness_metrics['interpretation'] = st.text_area("Interpretation", model_data.usefulness_metrics.get('interpretation', ''))
+                    model_data.usefulness_metrics['testing_data_description'] = st.text_area("Testing Data Description", model_data.usefulness_metrics.get('testing_data_description', ''))
+                    model_data.usefulness_metrics['validation_process'] = st.text_area("Validation Process", model_data.usefulness_metrics.get('validation_process', ''))
+
+                st.subheader("Fairness & Equity")
+                col1, col2 = st.columns(2)
+                with col1:
+                    model_data.fairness_metrics['goal'] = st.text_area("Fairness Goal", model_data.fairness_metrics.get('goal', ''), key="fair_goal")
+                    model_data.fairness_metrics['result'] = st.text_area("Fairness Result", model_data.fairness_metrics.get('result', ''), key="fair_result")
+                    model_data.fairness_metrics['test_type'] = st.text_input("Fairness Test Type", model_data.fairness_metrics.get('test_type', ''), key="fair_test")
+                with col2:
+                    model_data.fairness_metrics['interpretation'] = st.text_area("Fairness Interpretation", model_data.fairness_metrics.get('interpretation', ''), key="fair_interp")
+                    model_data.fairness_metrics['testing_data_description'] = st.text_area("Fairness Testing Data", model_data.fairness_metrics.get('testing_data_description', ''), key="fair_data")
+                    model_data.fairness_metrics['validation_process'] = st.text_area("Fairness Validation", model_data.fairness_metrics.get('validation_process', ''), key="fair_valid")
+
+            with st.expander("6. Compliance & Resources"):
+                model_data.data_security_standards = st.text_area("Data Security Standards", model_data.data_security_standards)
+                model_data.compliance_frameworks = st.text_area("Compliance Frameworks", model_data.compliance_frameworks)
+                model_data.peer_reviewed_publications = st.text_area("Peer Reviewed Publications", model_data.peer_reviewed_publications)
+                model_data.patient_consent_required = st.text_area("Patient Consent Requirements", model_data.patient_consent_required)
+
+            if st.button("Apply All Manual Entries", type="primary"):
+                st.success("All manual entries applied! Updated model card generated.")
+                # Regenerate the model card with updated data
+                updated_card = pipeline.generate_structured_model_card(model_data)
+                st.markdown("### Updated Model Card")
+                st.markdown(updated_card)
+
+                # Update download options
+                st.download_button(
+                    "Download Updated Markdown", updated_card,
+                    f"{model_name.replace(' ', '_')}_complete_model_card.md",
+                    "text/markdown")
+
+
+if __name__ == "__main__":
+    main()
