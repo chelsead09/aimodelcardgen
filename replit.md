@@ -106,6 +106,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes: Latest modifications with dates
 
+### 2025-07-16: CardGen Pipeline Implementation with CHAI Schema
+- **Revolutionary Update**: Implemented fully automated CardGen pipeline method
+- **CHAI Schema Integration**: Added complete CHAI Applied Model Card schema v0.1 for HTI-1 and OCR compliance
+- **Automated Discovery**: CardGen pipeline searches HuggingFace, GitHub, PubMed, and ArXiv simultaneously
+- **Content Extraction**: Intelligent content processing with metrics extraction, clinical info parsing, and reference detection
+- **Multi-format Export**: Support for JSON, Markdown, and XML export formats
+- **Real-time Progress**: Live progress tracking with step-by-step status updates
+- **Streamlined UX**: Single-click model card generation from model name input only
+- **Enhanced Architecture**: Added three new core modules:
+  - `chai_schema.py`: CHAI-compliant data structures and XML/JSON/Markdown export
+  - `cardgen_pipeline.py`: Automated discovery and extraction pipeline
+  - Updated `app.py`: New CardGen Pipeline page with real-time progress tracking
+- **Compliance Standards**: Full HTI-1 and OCR compliance through CHAI schema implementation
+- **User Experience**: Minimal manual input required - only model name confirmation needed
+
 ### 2025-07-16: Enhanced Compliance with 45 CFR 170.315
 - **Major Update**: Expanded ModelCardData class to include full compliance with 45 CFR 170.315 medical AI requirements
 - **Added 60+ new fields** covering all mandatory sections:

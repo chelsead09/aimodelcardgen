@@ -1,0 +1,204 @@
+📋 1. Metadata [45 CFR 170.315 (b)(11)(iv)(B)(1)(i)]
+
+Developer/Organization:
+
+Version: None
+
+Release Stage:
+
+Initial Release:
+
+Contact Info:
+
+Last Updated:
+
+Geographic Availability:
+
+Regulatory Approval:
+
+Clinical Oversight:
+
+Dataset DOI:
+
+📝 2. Uses & Directions
+
+Model Description: machine learning model for classifying 21 dermatological conditions across diverse skin tones, as part of a fairness-focused AI challenge organized by Break Through Tech and the Algorithmic Justice League.
+
+Intended Use:
+
+Clinical Workflow:
+
+Clinical Gap Addressed:
+
+Primary Users:
+
+How to Use:
+
+Targeted Patient Population:
+
+Human Oversight Required:
+
+Inform/Augment/Replace:
+
+Specific Use Cases:
+
+Target User Expertise:
+
+Real-World Scenarios:
+
+Cautioned Use Cases:
+
+Inclusion/Exclusion Criteria:
+
+⚠️ 3. Warnings [45 CFR 170.315(b)(11)(iv)(B)(3) (i-ii)]
+
+🟡 Medium Clinical Risk Level
+
+Developer Warnings: Medium bias risk detected. Review diversity metrics.
+
+Known Biases: {'github': {'diversity_mentions': [{'keyword': 'skin tone', 'context': '-for-dermatology machine learning model for classifying 21 dermatological conditions across diverse skin tones, as part of a fairness-focused ai challenge organized by break through tech and the algorithmic ju'}, {'keyword': 'fairness', 'context': 'learning model for classifying 21 dermatological conditions across diverse skin tones, as part of a fairness-focused ai challenge organized by break through tech and the algorithmic justice league. derma-ai-t'}], 'bias_indicators': [], 'fairness_metrics': [], 'bias_risk_level': 'medium'}, 'pubmed': {'diversity_mentions': [{'keyword': 'skin tone', 'context': 'ing hidradenitis suppurativa from clinical images. ai-generated dermatologic images show deficient skin tone diversity and poor diagnostic accuracy: an experimental study. generative ai models are increasingl'}, {'keyword': 'bias', 'context': 'tic accuracy: an experimental study. generative ai models are increasingly used in dermatology, yet biases in training datasets may reduce diagnostic accuracy and perpetuate ethnic health disparities. art'}, {'keyword': 'bias', 'context': 'ccuracy and generalizability. in addition, addressing concerns regarding data quality, privacy, and bias is equally critical to avoid exacerbating existing healthcare disparities. scientific societies and'}, {'keyword': 'bias', 'context': 'disease monitoring, can rapidly transform ad management. however, as technology advances, ensuring bias reduction through representative training datasets and establishing proper regulatory oversight to'}], 'bias_indicators': [], 'fairness_metrics': [], 'bias_risk_level': 'medium'}}
+
+Model Limitations:
+
+Failure Modes:
+
+Inappropriate Settings:
+
+Contraindications:
+
+Dependency Requirements:
+
+🔧 4. Trust Ingredients - AI System Facts
+
+Model Type:
+
+System Interactions:
+
+Outcomes/Outputs:
+
+Explainability:
+
+Foundation Models:
+
+Input Data Source:
+
+Data Type:
+
+Real-World/Synthetic:
+
+Training Inclusion/Exclusion:
+
+📊 Development Data [45 CFR 170.315(b)(11)(iv)(B)(4) (i-iv)]
+
+Dataset Size:
+
+Annotation Process:
+
+Dataset Transparency:
+
+Validation Dataset Type:
+
+Data Collection Timeline:
+
+Data Collection Location:
+
+Skin Tone Diversity:
+
+Ethical Review:
+
+IRB Approval:
+
+Training Data Alignment:
+
+External Validation:
+
+⚖️ Bias Mitigation [45 CFR 170.315(b)(11)(iv)(B)(5) (i-ii)]
+
+Bias Mitigation Approaches:
+
+Fairness Approaches:
+
+Bias Management Strategies:
+
+🔄 Ongoing Maintenance [45 CFR 170.315(b)(11)(iv)(B)(8) & (9)]
+
+Monitoring Validity:
+
+Monitoring Fairness:
+
+Update Process:
+
+Risk Correction:
+
+Monitoring Tools:
+
+Anticipated Improvements:
+
+Security Compliance:
+
+Transparency Mechanisms:
+
+📈 5. Key Metrics [45 CFR 170.315(b)(11)(iv)(B)(6) & (7)]
+
+Usefulness & Efficacy
+
+Fairness & Equity
+
+Safety & Reliability
+
+🔍 Transparency Information [45 CFR 170.315 (b)(11)(iv)(B)(1)(ii)]
+
+Funding Source:
+
+Technical Implementation Funding:
+
+Third Party Info:
+
+Stakeholders Consulted:
+
+Patient Stakeholders:
+
+Provider Stakeholders:
+
+Conflicts of Interest:
+
+📚 6. Resources
+
+Evaluation References:
+
+Clinical Trials:
+
+Peer Reviewed Publications: Large language models in evaluating hidradenitis suppurativa from clinical images.; AI-generated dermatologic images show deficient skin tone diversity and poor diagnostic accuracy: An experimental study.; Artificial intelligence in cardiovascular pharmacotherapy: applications and perspectives.
+
+FDA Status:
+
+Reimbursement Status:
+
+Patient Consent Required:
+
+Data Security Standards:
+
+Compliance Frameworks:
+
+Accreditations:
+
+Privacy/Security Protocols:
+
+🔗 Additional Resources
+
+GitHub Repository: https://github.com/Rebeccals1/Equitable-AI-for-Dermatology
+
+Citations:
+
+Large language models in evaluating hidradenitis suppurativa from clinical images. (2025) - https://pubmed.ncbi.nlm.nih.gov/40668105/
+AI-generated dermatologic images show deficient skin tone diversity and poor diagnostic accuracy: An experimental study. (2025) - https://pubmed.ncbi.nlm.nih.gov/40668069/
+Artificial intelligence in cardiovascular pharmacotherapy: applications and perspectives. (2025) - https://pubmed.ncbi.nlm.nih.gov/40662528/
+🔍 Source Information
+
+Sources: huggingface, github, pubmed, timestamp
+
+Source Reliability Scores:
+
+Huggingface: 0.8/1.0
+Github: 0.6/1.0
+Pubmed: 0.9/1.0

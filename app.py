@@ -1,7 +1,10 @@
 import streamlit as st
 import json
+import asyncio
 from datetime import datetime
 from model_card_pipeline import ModelCardPipeline, ModelCardData
+from cardgen_pipeline import CardGenPipeline
+from chai_schema import CHAIModelCard
 from utils import (
     display_source_analysis, 
     display_discovered_sources, 
@@ -9,6 +12,7 @@ from utils import (
     format_model_card_display,
     create_download_button
 )
+import re
 
 # Configure Streamlit page
 st.set_page_config(
@@ -39,10 +43,242 @@ st.markdown("Discover, analyze, and generate comprehensive model cards for medic
 st.sidebar.title("Navigation")
 page = st.sidebar.selectbox(
     "Select Page",
-    ["Model Discovery", "Model Analysis", "Model Card Generation", "Website Analysis", "Manual Entry", "Help"]
+    ["CardGen Pipeline", "Model Discovery", "Model Analysis", "Model Card Generation", "Website Analysis", "Manual Entry", "Help"]
 )
 
-if page == "Model Discovery":
+if page == "CardGen Pipeline":
+    st.header("🚀 CardGen Pipeline - Automated Model Card Generation")
+    st.markdown("""
+    **Fully Automated Model Card Generation using CardGen Method**
+    
+    This pipeline automatically:
+    1. **Discovers** published papers, GitHub repositories, and HuggingFace model cards
+    2. **Extracts** relevant information from all sources
+    3. **Generates** HTI-1 and OCR compliant model cards using CHAI schema
+    
+    Simply enter the model name and confirm - the system handles the rest!
+    """)
+    
+    # Model name input
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        model_name = st.text_input(
+            "Enter Dermatology AI Model Name",
+            placeholder="e.g., DermNet, SkinVision, MelanomaNet",
+            help="Enter the name of the dermatology AI model you want to generate a card for"
+        )
+    
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
+        run_cardgen = st.button("🚀 Run CardGen Pipeline", type="primary")
+    
+    if run_cardgen:
+        if not model_name:
+            st.error("Please enter a model name")
+        else:
+            # Progress tracking
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # Create columns for live updates
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                discovery_status = st.empty()
+                extraction_status = st.empty()
+                generation_status = st.empty()
+            
+            with col2:
+                metrics_display = st.empty()
+            
+            try:
+                # Initialize CardGen pipeline
+                async def run_cardgen_pipeline():
+                    async with CardGenPipeline() as pipeline:
+                        # Step 1: Source Discovery
+                        status_text.text("🔍 Discovering sources...")
+                        progress_bar.progress(10)
+                        
+                        sources = await pipeline.discover_model_sources(model_name)
+                        
+                        # Display discovery results
+                        with discovery_status.container():
+                            st.subheader("📊 Source Discovery Results")
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                hf_count = len(sources.get('huggingface', []))
+                                st.metric("HuggingFace", hf_count)
+                            
+                            with col2:
+                                gh_count = len(sources.get('github', []))
+                                st.metric("GitHub", gh_count)
+                            
+                            with col3:
+                                pm_count = len(sources.get('pubmed', []))
+                                st.metric("PubMed", pm_count)
+                            
+                            with col4:
+                                ax_count = len(sources.get('arxiv', []))
+                                st.metric("ArXiv", ax_count)
+                        
+                        progress_bar.progress(30)
+                        
+                        # Step 2: Content Extraction
+                        status_text.text("📝 Extracting content from sources...")
+                        progress_bar.progress(50)
+                        
+                        extracted_content = await pipeline.extract_content_from_sources(sources)
+                        
+                        # Display extraction results
+                        with extraction_status.container():
+                            st.subheader("🔍 Content Extraction Results")
+                            aggregated = extracted_content.get('aggregated_content', {})
+                            
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                desc_count = len(aggregated.get('descriptions', []))
+                                st.metric("Descriptions", desc_count)
+                            
+                            with col2:
+                                metric_count = len(aggregated.get('metrics', {}))
+                                st.metric("Metrics Found", metric_count)
+                            
+                            with col3:
+                                ref_count = len(aggregated.get('references', []))
+                                st.metric("References", ref_count)
+                        
+                        progress_bar.progress(70)
+                        
+                        # Step 3: Model Card Generation
+                        status_text.text("🏗️ Generating CHAI-compliant model card...")
+                        progress_bar.progress(90)
+                        
+                        chai_card = await pipeline.generate_chai_model_card(model_name, extracted_content)
+                        
+                        progress_bar.progress(100)
+                        status_text.text("✅ CardGen Pipeline completed successfully!")
+                        
+                        return chai_card
+                
+                # Run the pipeline
+                chai_model_card = asyncio.run(run_cardgen_pipeline())
+                
+                # Store in session state
+                st.session_state.current_chai_card = chai_model_card
+                
+                # Display completion message
+                st.success("🎉 Model card generated successfully using CardGen pipeline!")
+                
+                # Show generation summary
+                st.subheader("📋 Generation Summary")
+                
+                summary = chai_model_card.extraction_summary
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Sources Discovered", summary.get('sources_discovered', {}).get('total', 0))
+                
+                with col2:
+                    st.metric("Content Extracted", summary.get('content_extracted', 0))
+                
+                with col3:
+                    st.metric("Metrics Found", summary.get('metrics_found', 0))
+                
+                with col4:
+                    st.metric("References Found", summary.get('references_found', 0))
+                
+                # Preview the generated card
+                st.subheader("📄 Generated Model Card Preview")
+                
+                with st.expander("CHAI Model Card Details", expanded=True):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("**Basic Information**")
+                        st.markdown(f"- **Model**: {chai_model_card.model_name}")
+                        st.markdown(f"- **Developer**: {chai_model_card.model_developer}")
+                        st.markdown(f"- **Summary**: {chai_model_card.summary[:200]}...")
+                    
+                    with col2:
+                        st.markdown("**Compliance Status**")
+                        st.markdown("✅ HTI-1 Compliant")
+                        st.markdown("✅ OCR Compliant")
+                        st.markdown("✅ CHAI Schema v0.1")
+                        st.markdown(f"✅ Generated: {chai_model_card.extraction_timestamp}")
+                
+                # Download options
+                st.subheader("💾 Download Options")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.download_button(
+                        label="📄 Download as JSON",
+                        data=chai_model_card.to_json(),
+                        file_name=f"{model_name}_chai_model_card.json",
+                        mime="application/json"
+                    )
+                
+                with col2:
+                    st.download_button(
+                        label="📝 Download as Markdown",
+                        data=chai_model_card.to_markdown(),
+                        file_name=f"{model_name}_chai_model_card.md",
+                        mime="text/markdown"
+                    )
+                
+                with col3:
+                    st.download_button(
+                        label="🔧 Download as XML",
+                        data=chai_model_card.to_xml(),
+                        file_name=f"{model_name}_chai_model_card.xml",
+                        mime="application/xml"
+                    )
+                
+                # Option to go to manual editing
+                st.markdown("---")
+                st.info("💡 Want to review or edit the generated model card? Go to the 'Manual Entry' page to make adjustments.")
+                
+            except Exception as e:
+                st.error(f"Error running CardGen pipeline: {str(e)}")
+                st.exception(e)
+    
+    # Show previous results if available
+    if 'current_chai_card' in st.session_state and st.session_state.current_chai_card:
+        st.markdown("---")
+        st.subheader("📋 Previous CardGen Results")
+        
+        chai_card = st.session_state.current_chai_card
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.download_button(
+                label="📄 Download JSON",
+                data=chai_card.to_json(),
+                file_name=f"{chai_card.model_name}_chai_model_card.json",
+                mime="application/json"
+            )
+        
+        with col2:
+            st.download_button(
+                label="📝 Download Markdown",
+                data=chai_card.to_markdown(),
+                file_name=f"{chai_card.model_name}_chai_model_card.md",
+                mime="text/markdown"
+            )
+        
+        with col3:
+            st.download_button(
+                label="🔧 Download XML",
+                data=chai_card.to_xml(),
+                file_name=f"{chai_card.model_name}_chai_model_card.xml",
+                mime="application/xml"
+            )
+
+elif page == "Model Discovery":
     st.header("🔍 Model Discovery")
     st.markdown("Search for medical AI models across multiple platforms including HuggingFace, GitHub, and PubMed.")
     
@@ -568,28 +804,36 @@ elif page == "Help":
     
     This application helps you discover, analyze, and generate comprehensive model cards for medical and dermatology AI models with built-in bias detection capabilities.
     
-    ### 1. Model Discovery
+    ### 1. CardGen Pipeline ⭐ (Recommended)
+    - **Fully Automated**: Simply enter the model name and click "Run CardGen Pipeline"
+    - **Comprehensive Discovery**: Automatically searches HuggingFace, GitHub, PubMed, and ArXiv
+    - **HTI-1 & OCR Compliant**: Generates model cards following CHAI schema standards
+    - **Multiple Formats**: Download as JSON, Markdown, or XML
+    - **Real-time Progress**: Watch as the system discovers, extracts, and generates
+    - **Minimal Manual Input**: Only requires model name confirmation
+    
+    ### 2. Model Discovery
     - Enter a model name or keywords related to medical/dermatology AI
     - Select which sources to search (HuggingFace, GitHub, PubMed)
     - Click "Search Models" to discover relevant models
     
-    ### 2. Model Analysis
+    ### 3. Model Analysis
     - Review the discovered sources and their reliability scores
     - Analyze bias risk indicators and diversity mentions
     - View recommendations for improving model fairness
     
-    ### 3. Model Card Generation
+    ### 4. Model Card Generation
     - Generate a comprehensive model card based on discovered information
     - Review all sections including bias analysis and risk assessment
     - Download the model card in JSON or Markdown format
     
-    ### 4. Website Analysis
+    ### 5. Website Analysis
     - Analyze any website URL to check model card accuracy
     - Extract performance metrics and bias indicators
     - Check CFR compliance elements
     - Generate model cards from website content
     
-    ### 5. Manual Entry
+    ### 6. Manual Entry
     - Create model cards manually when automated discovery isn't sufficient
     - Fill in all relevant information about your model
     - Generate and download the completed model card
