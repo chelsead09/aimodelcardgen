@@ -1,0 +1,303 @@
+21. Metadata
+Model Name
+Developer/Organization
+Model/Software Release Stage (e.g. beta testing, pilot, full-version)
+Release Date (Initial & last updated)
+Inquiries or to report an issue: Website / Contact Info (Support Phone/Email)
+Geographic Availability (e.g., open-domain public, USA only, etc.)
+Regulatory Approval Status (e.g., FDA approval, CE Mark, etc.)
+Summary & Keywords
+Provide a summary of the AI solution’s intended uses, key features, clinical workflow and key performance metrics.
+Clinical Oversight: Were dermatologists or clinicians involved in development?
+Digital Object Identifier (DOI) of the dataset used
+
+2. Uses & Directions
+Intended Use & Workflow
+Describe how the solution should be used in clinical practice, including the following details: 
+Whether solution is intended to inform, augment, or replace clinical management
+Whether human oversight or a “human in the loop” is required to operate the solution, and any actions clinicians should take at certain steps of the clinical workflow.
+Specific use cases and/or diseases that this solution addresses (e.g., binary classification of lesions, diagnosis support for melanoma, triage)
+Clinical Gap Addressed
+Primary Intended Users (e.g., dermatologists, PCPs, patients)
+How to use (e.g., web-based tool, smartphone app, EHR integration)
+Real-World Use Cases or Scenarios: Specify the target users of the solution, including any necessary knowledge or expertise they should have prior to use. 
+Cautioned out-of-scope settings and use cases: 
+Outline any inclusion or exclusion criteria based on patient population or other key variables, as applicable.
+
+3. Warnings
+Developer-Supplied Warnings or Contraindications
+For example, any warnings, contraindications, or risk disclosures from developers on if there are any tasks, situations, or patient populations where the use of this solution is cautioned or discouraged. 
+Model Limitations
+Please provide all known risks, inappropriate settings or uses, and any limitations of the solution that users should be aware of. (e.g., poor performance on dark skin tones)
+Failure Modes
+Dependency on certain imaging conditions or data quality
+Subgroup Analysis by:
+Fitzpatrick skin type
+Age group
+Sex/gender
+Lesion types
+Geographical region, if relevant
+Known or Potential Biases (e.g., underperformance on certain Fitzpatrick types)
+Any information on known biases where the tool’s results used for certain tasks, situations, or patient populations that should be interpreted with caution
+Clinical Risk Level
+See resources in section 5.2 including "Software as a Medical Device": Possible Framework for Risk Categorization and Corresponding Considerations
+ 
+4. Trust Ingredients
+AI System Facts
+Model type:
+Describe if predictive or generative; and if it fits a subclass within the type
+Describe how it interacts with other systems. Ex: EHRs, medical devices, etc 
+Outcomes and outputs
+Describe type and value of solution output
+Specify whether output is prediction, classification, recommendation, evaluation, analysis or another form of result
+Does the model provide any explainability? (i.e., are explanations provided for how a prediction is reached or how an output is generated)
+Foundation models used in application, if applicable
+List any foundation models WITH version information if utilized in solution
+Ex: ChatGPT 4, Claude3, etc
+Input data source
+Specify source of data that is necessary as input into AI solution
+Output/input data type
+Specify the types of data used by the solution (EHR, waveform, imaging, etc)
+Indicate whether data is real-world data or synthetic data
+Outline exclusion and inclusion criteria that influenced training data set
+Clarify the use of following variables as input features: race, ethnicity, language, sexual orientation, gender identify, sex, date of birth, social determinants of health elements, and health status assessments 
+Describe the demographics representativeness based on race, ethnicity, language, sexual orientation, gender identity, sex, date of birth, social determinants of health elements, and health status assessments 
+Development data characterization
+Provide details on the data used to train the solution, including Exclusion and inclusion criteria that influenced the training dataset.
+Dataset: Size, annotations and labeling process
+Dataset transparency: public or proprietary 
+Validation/Test Dataset: real-world, synthetic, or retrospective, any external validation
+Timeline of when Data was collected
+Information on location where Data was collected
+Derm specific: Skin tone diversity (fitzpatrick scale if reported)
+Did the data collection process undergo ethical review
+Ethical Review Board Oversight (Y/N)?
+IRB Approval?
+Use of the variables as identified in USCDI v3:
+Race, Ethnicity, Language, Sexual Orientation, Gender identity, Sex, Date of Birth, Social determinants of health data, Health status assessment data
+Description of the demographic representativeness of the data, including demographic distribution as identified in USCDI v3
+Race, Ethnicity, Language, Sexual Orientation, Gender identity, Sex, Date of Birth, Social determinants of health data, Health status assessment data
+Description of relevance and alignment of training data to the intended deployment setting.
+Bias mitigation approaches
+Describe the approach developers took to ensure output is FAIR
+Describe approaches to manage,, reduce, or eliminate bias
+Ongoing Maintenance
+Provide details regarding ongoing maintenance and monitoring of AI solution 
+Monitoring Validity: Describe the process and frequency for monitoring the solution’s validity over time, including its validity when applied to local data.
+Monitoring Fairness: Outline the process and frequency for assessing the solution’s fairness, both in general and when applied to local data.
+Update Process: Explain the process and frequency for updating the solution to ensure continuous improvement.
+Risk Correction: Describe how often the solution’s performance is corrected when risks related to validity or fairness are identified.
+Monitoring Tools: List any built-in monitoring tools or functionalities provided by the developer or quality assurance lab.
+Anticipated Improvements: Note any anticipated changes or improvements based on ongoing monitoring and evaluation efforts.
+Security and compliance environment practices or accreditations, if applicable:
+Provide a list of accreditations or practices adhered to with respect to security and compliance. E.g., SOC2 Type 2, ISO, NIST, Fed Ramp, etc.
+Transparency, Intelligibility, and Accountability mechanisms, if applicable:
+Please provide descriptions on the implemented features or mechanisms regarding transparency, intelligibility, and accountability, such as providing saliency maps, confidence indicators as part of the system output, and feedback channels.
+Transparency Information:
+Funding source of the technical implementation
+Please provide information regarding the funding source of the technical implementation for the solution’s development
+3rd Party Information, If Applicable
+Please provide name, product, contact information for third parties integrated into the overall solution.
+Stakeholders consulted during design of intervention (e.g. patients, providers)
+Indicate patient stakeholder groups of individuals consulted during design of solution. Include specific names where possible 
+Patient advocacy groups, coalitions, physician groups, individual clinicians, etc 
+Indicate any funding sources for Development
+Indicate any technical implementation partners
+Conflicts of interest (sponsorship, funding)
+ 
+
+5. Key Metrics TEST (See Detailed Instructions in CHAI template below)
+Usefulness, Usability, & Efficacy
+Goal of Metric(s)
+Result
+Interpretation
+Test Type
+Testing Data Description
+Validation Process & Justification
+AUROC / Accuracy / Sensitivity / Specificity / F1-Score
+Human-AI comparison (if available)
+List any known issues with Test Set (e.g.., missing labels, lack of diversity)?
+Fairness & Equity
+Goal of Metric(s)
+Result
+Interpretation
+Test Type
+Testing Data Description
+Validation Process & Justification
+Safety & Reliability
+Goal of Metric(s)
+Result
+Interpretation
+Test Type
+Testing Data Description
+Validation Process & Justification
+FDA status (cleared, in process, investigational)
+Privacy/Security protocols
+
+6. Resources 
+Evaluation References, If Available
+Clinical Trial, If Available
+If mobile app, information about ratings and downloads
+Compliance and Security
+Data Security Standards Followed (e.g., HIPAA, SOC2) 
+Compliance Frameworks (e.g., GDPR) 
+Relevant Accreditations (e.g., ISO, ONC)
+Peer Reviewed Publication(s)
+Indicate the status of each (e.g., peer-reviewed, abstract, or under review)
+Reimbursement status, if applicable
+Patient consent or disclosure required or suggested
+Indicate if the developer recommends obtaining patient informed consent or providing disclosure for use of the solution
+
+
+
+Name:                                    
+Developer: [45 CFR 170.315 (b)(11)(iv)(B)(1)(i)]
+Inquires or to report an issue: [45 CFR 170.315 (b)(11)(iv)(B)(1)(i)]
+abc@abc.com or +1 (999) 999- 9999
+Release Stage:                                                                             	Release Date:                                                                       	Version: Model / Software Release Version Global Availability:                                                                    	Regulatory Approval, If applicable:
+Summary:
+Please provide a summary of the AI solution’s intended uses, key features, clinical workflow and key performance metrics.
+ 
+Keywords:
+Uses and Directions:
+·   	Intended use and workflow: Please describe how the solution should be used in clinical practice, including the following details: (e.g., binary classification of lesions, diagnosis support for melanoma, triage)
+o	Whether the solution is intended to inform, augment, or replace clinical management [45 CFR 170.315(b)(11)(iv)(B)(2)(iv)].
+o	Whether human oversight or a “human in the loop” is required to operate the solution, and any actions clinicians should take at certain steps of the clinical workflow.
+o	 Specific use cases and/or diseases that this solution addresses.
+·   	Primary intended users: (e.g., dermatologists, PCPs, patients)
+o	Please specify the target users of the solution, including any necessary knowledge or expertise they should have prior to use.
+o	Please outline any inclusion or exclusion criteria based on patient population or other key variables, as applicable.
+·   	How to use: (e.g., web-based tool, smartphone app, EHR integration)
+·   	Targeted patient population:
+·   	Cautioned out-of-scope settings and use cases: [45 CFR 170.315(b)(11)(iv)(B)(3) (i-ii)]
+o	Please describe any tasks, situations, or patient populations where the use of this solution is cautioned or discouraged.
+o	Please provide all known risks, inappropriate settings or uses, and any limitations of the solution that users should be aware of.
+Warnings
+·   	Known biases or ethical considerations: 45 CFR 170.315(b)(11)(iv)(B)(3) (i-ii)] (e.g., poor performance on dark skin tones)
+o	Please describe any tasks, situations, or patient populations where the use of this solution is cautioned or discouraged.
+o	Please provide all known risks, inappropriate settings or uses, and any limitations of the solution that users should be aware of.
+·   	Clinical risk level: See resources in section 5.2 including "Software as a Medical Device": Possible Framework for Risk Categorization and Corresponding Considerations
+ 
+Trust Ingredients
+AI System Facts:
+·   	Outcome(s) and output(s): [45 CFR 170.315 (b)(11)(iv)(B)(1)(iv)]
+o	Please describe the type and value of the solution output.  Specify whether the output is a prediction, classification, recommendation, evaluation, analysis, or another form of result.
+·   	Model type:
+o	Please determine if this model is predictive or generative (as well as relevant subclass within the broader category), and describe how it interacts with any other systems, such as EHRs, medical devices, or any other integrated platforms. 
+·   	Foundation models used in application, if applicable:
+o	Please list any foundational models (with version information) utilized in the solution, such as ChatGPT 4, Claude 3, or others.
+·   	Input data source:  
+o	Please specify the source of data that is necessary as input into the AI solution.
+·   	Output/Input data type: [45 CFR 170.315(b)(11)(iv)(B)(4) (i-iii)]
+o	Please specify the types of data used by the solution (e.g., EHR, waveform, imaging, etc.).
+o	Please indicate whether the data is real-world data or synthetic data.
+o	Please outline exclusion and inclusion criteria that influenced the training data set.
+o	Please clarify the use of following variables as input features: race, ethnicity, language, sexual orientation, gender identity, sex, date of birth, social determinants of health elements (USCDI v3), and health status assessments (USCDI v3).
+o	Please describe the demographic representativeness based on race, ethnicity, language, sexual orientation, gender identity, sex, date of birth, social determinants of health elements (USCDI v3), and health status assessments (USCDI v3).
+·   	Development data characterization: [45 CFR 170.315(b)(11)(iv)(B)(4) (i-iv)]
+o	Please provide details on the data used to train the solution, including Exclusion and inclusion criteria that influenced the training dataset. 
+              Dataset: Size, annotations and labeling process
+              Dataset transparency: public or proprietary 
+              Validation/Test Dataset: real-world or retrospective, any external validation
+              Derm specific: Skin tone diversity (fitzpatrick scale if reported)
+o	Use of the variables as identified in USCDI v3:
+§  Race, Ethnicity, Language, Sexual Orientation, Gender identity, Sex, Date of Birth, Social determinants of health data, Health status assessment data
+o	Description of the demographic representativeness of the data, including demographic distribution as identified in USCDI v3
+§  Race, Ethnicity, Language, Sexual Orientation, Gender identity, Sex, Date of Birth, Social determinants of health data, Health status assessment data
+o	Description of relevance and alignment of training data to the intended deployment setting.
+·   	Bias mitigation approaches: [45 CFR 170.315(b)(11)(iv)(B)(5) (i-ii)]
+o	Please describe the approach the developer(s) took to ensure the output is fair.
+o	Please describe the approaches to manage, reduce, or eliminate bias.
+·   	Ongoing Maintenance: Update Schedules, Monitoring, and Response Approach including fairness performance
+·   	[45 CFR 170.315(b)(11)(iv)(B)(8) (i-iv) & 45 CFR 170.315(b)(11)(iv)(B)(9) (i-ii)]
+o	Please provide the following details regarding to the ongoing maintenance and monitoring of the AI solution:
+§  Monitoring Validity: Describe the process and frequency for monitoring the solution’s validity over time, including its validity when applied to local data.
+§  Monitoring Fairness: Outline the process and frequency for assessing the solution’s fairness, both in general and when applied to local data.
+§  Update Process: Explain the process and frequency for updating the solution to ensure continuous improvement.
+§  Risk Correction: Describe how often the solution’s performance is corrected when risks related to validity or fairness are identified.
+§  Monitoring Tools: List any built-in monitoring tools or functionalities provided by the developer or quality assurance lab.
+§  Anticipated Improvements: Note any anticipated changes or improvements based on ongoing monitoring and evaluation efforts.
+·   	Security and compliance environment practices or accreditations, if applicable:
+o	Please provide a list of accreditations or practices adhered to with respect to security and compliance. E.g., SOC2 Type 2, ISO, NIST, Fed Ramp, etc.
+·   	Transparency, Intelligibility, and Accountability mechanisms, if applicable:
+o	Please provide descriptions on the implemented features or mechanisms regarding transparency, intelligibility, and accountability, such as providing saliency maps, confidence indicators as part of the system output, and feedback channels.
+Transparency Information:
+·   	Funding source of the technical implementation: [45 CFR 170.315 (b)(11)(iv)(B)(1)(ii)]
+o	Please provide information regarding the funding source of the technical implementation for the solution’s development
+·   	3rd Party Information, If Applicable:
+o	Please provide name, product, contact information for third parties integrated into the overall solution.
+·   	Stakeholders consulted during design of intervention (e.g. patients, providers):
+Key Metrics
+
+Usefulness, Usability, and Efficacy 
+ 
+Fairness and Equity
+ 
+Safety and Reliability
+ 
+Goal of metric(s):
+Goal of metric(s):
+Goal of metric(s):
+Result:
+Interpretation:
+Result:
+Interpretation:
+Result:
+Interpretation:
+Test Type:
+Test Type:
+Test Type:
+Testing Data Description:
+Testing Data Description:
+Testing Data Description:
+Validation Process and Justification:
+Validation Process and Justification:
+Validation Process and Justification:
+
+
+
+
+
+
+
+
+
+
+
+
+
+[45 CFR 170.315(b)(11)(iv)(B)(6) (i-iv) & 45 CFR 170.315(b)(11)(iv)(B)(7) (i-v)]
+ 
+For each of the principle areas above (definitions provided in Appendix Section 5.3), describe the specific metric and goal of the metrics selected, the quantitative results of performance relevant to those principle areas, the interpretation of the quantitative results, the type of test used, the description of the data used to conduct the test, and the validation process and justification as it relates to the AI solution. See relevant additional information below to help with scoping of this information.
+·   	External Validation Process and Measures of Performance
+o   	Description of the data source, clinical setting, or environment where an intervention’s validity and fairness has been assessed other than training data source
+o   	Party that conducted the external testing
+o   	Description of the external validation process
+o   	Description of validation impact metrics
+·   	Quantitative Measures of Performance
+o   	Validity of intervention in test data derived from same source as initial training data
+o   	Fairness of intervention in test data derived from same source as initial training data
+o   	Validity of intervention in data external to or from a different source than the initial training data
+o   	Fairness of the intervention in data external to or from a different source than the initial training data
+o   	References to evaluation of use of the intervention on outcomes including, bibliographic citations or hyperlink to how well the intervention reduced morbidity, mortality, length of stay, or other outcomes
+·   	Fairness & Equity
+o   	Describe fairness and equity across notable subgroups such as but not limited to national origin, race, color, ethnicity, disability, legal and self-reported sex, age, relevant social determinants of health as applicable
+o   	In the Validation Process & Justification, please describe what was and was not considered and why.
+Test Type Definitions:
+o   	Internal as defined as validation set that comes from the same population as the training set (e.g. cross validation, train-test split)
+o   	External as defined as validation set that comes from a different population
+o   	Local as defined as validation set from data sourced from the same healthcare system or institution
+o   	Prospective as defined as validation set that evaluates performance before it is used in real-world implementation
+ 
+Resources
+·   	Evaluation References, If Available:
+·   	Clinical Trial, If Available:
+·   	Peer Reviewed Publication(s): Please indicate the status of each (e.g., peer-reviewed, abstract, or under review)
+·   	Reimbursement status, if applicable:
+·   	Patient consent or disclosure required or suggested:
+o   Please indicate if the developer recommends obtaining patient informed consent or providing disclosure for the use of the solution.
+·   	Stakeholders consulted during design of solution:
+o	Please indicate pertinent stakeholder groups or individuals consulted during the design of the solution. Include specific names where possible.
+§  E.g., patient advocacy groups, coalitions, physician groups, individual clinicians, etc.
+
+

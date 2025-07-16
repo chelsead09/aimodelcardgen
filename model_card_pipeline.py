@@ -14,14 +14,14 @@ import trafilatura
 
 @dataclass
 class ModelCardData:
-    # Basic Metadata
+    # 1. Metadata [45 CFR 170.315 (b)(11)(iv)(B)(1)(i)]
     model_name: str
     developer_organization: str = ""
     model_version: Optional[str] = None
     release_stage: str = ""  # beta, pilot, full-version
     initial_release_date: str = ""
     last_updated_date: str = ""
-    contact_info: str = ""  # Website/Phone/Email
+    contact_info: str = ""  # Website/Phone/Email [45 CFR 170.315 (b)(11)(iv)(B)(1)(i)]
     geographic_availability: str = ""  # USA only, global, etc.
     regulatory_approval: str = ""  # FDA approval, CE Mark, etc.
     summary: str = ""
@@ -29,7 +29,7 @@ class ModelCardData:
     clinical_oversight: str = ""  # Were dermatologists involved?
     dataset_doi: str = ""
 
-    # Uses & Directions
+    # 2. Uses & Directions
     model_description: str = ""
     intended_use: str = ""
     clinical_workflow: str = ""
@@ -37,10 +37,16 @@ class ModelCardData:
     primary_users: str = ""
     how_to_use: str = ""  # web-based, app, EHR integration
     real_world_scenarios: str = ""
-    cautioned_use_cases: str = ""
+    cautioned_use_cases: str = ""  # [45 CFR 170.315(b)(11)(iv)(B)(3) (i-ii)]
     inclusion_exclusion_criteria: str = ""
+    targeted_patient_population: str = ""
+    human_oversight_required: str = ""  # Human in the loop requirements
+    clinical_actions_required: str = ""
+    inform_augment_replace: str = ""  # [45 CFR 170.315(b)(11)(iv)(B)(2)(iv)]
+    specific_use_cases: str = ""
+    target_user_expertise: str = ""
 
-    # Warnings
+    # 3. Warnings [45 CFR 170.315(b)(11)(iv)(B)(3) (i-ii)]
     developer_warnings: str = ""
     model_limitations: str = ""
     failure_modes: str = ""
@@ -48,21 +54,31 @@ class ModelCardData:
     subgroup_analysis: Dict[str, str] = None  # Fitzpatrick, age, sex, etc.
     known_biases: str = ""
     clinical_risk_level: str = ""
+    inappropriate_settings: str = ""
+    contraindications: str = ""
 
-    # Trust Ingredients - AI System Facts
+    # 4. Trust Ingredients - AI System Facts
     model_type: str = ""  # predictive/generative
     system_interactions: str = ""  # EHR, medical devices
-    outcomes_outputs: str = ""
+    outcomes_outputs: str = ""  # [45 CFR 170.315 (b)(11)(iv)(B)(1)(iv)]
     explainability: str = ""
     foundation_models: str = ""
     input_data_source: str = ""
-    output_input_data_type: str = ""
+    output_input_data_type: str = ""  # [45 CFR 170.315(b)(11)(iv)(B)(4) (i-iii)]
     real_world_or_synthetic: str = ""
     training_inclusion_exclusion: str = ""
-    uscdi_variables_used: str = ""
+    uscdi_variables_used: str = ""  # USCDI v3 variables
     demographic_representativeness: str = ""
+    uscdi_race_ethnicity: str = ""
+    uscdi_language: str = ""
+    uscdi_sexual_orientation: str = ""
+    uscdi_gender_identity: str = ""
+    uscdi_sex: str = ""
+    uscdi_date_of_birth: str = ""
+    uscdi_social_determinants: str = ""
+    uscdi_health_status: str = ""
 
-    # Development Data
+    # Development Data [45 CFR 170.315(b)(11)(iv)(B)(4) (i-iv)]
     dataset_size: str = ""
     annotation_process: str = ""
     dataset_transparency: str = ""  # public or proprietary
@@ -73,12 +89,16 @@ class ModelCardData:
     ethical_review: str = ""
     irb_approval: str = ""
     training_data_alignment: str = ""
+    external_validation: str = ""
+    labeling_process: str = ""
+    data_exclusion_criteria: str = ""
 
-    # Bias Mitigation
+    # Bias Mitigation [45 CFR 170.315(b)(11)(iv)(B)(5) (i-ii)]
     bias_mitigation_approaches: str = ""
     fairness_approaches: str = ""
+    bias_management_strategies: str = ""
 
-    # Ongoing Maintenance
+    # Ongoing Maintenance [45 CFR 170.315(b)(11)(iv)(B)(8) (i-iv) & 45 CFR 170.315(b)(11)(iv)(B)(9) (i-ii)]
     monitoring_validity: str = ""
     monitoring_fairness: str = ""
     update_process: str = ""
@@ -87,17 +107,53 @@ class ModelCardData:
     anticipated_improvements: str = ""
     security_compliance: str = ""
     transparency_mechanisms: str = ""
+    update_frequency: str = ""
+    validity_monitoring_frequency: str = ""
+    fairness_monitoring_frequency: str = ""
+    local_data_monitoring: str = ""
 
-    # Transparency Information
+    # Transparency Information [45 CFR 170.315 (b)(11)(iv)(B)(1)(ii)]
     funding_source: str = ""
     third_party_info: str = ""
     stakeholders_consulted: str = ""
     conflicts_of_interest: str = ""
+    technical_implementation_funding: str = ""
+    development_funding: str = ""
+    technical_implementation_partners: str = ""
+    patient_stakeholders: str = ""
+    provider_stakeholders: str = ""
 
-    # Key Metrics - structured as separate sections
+    # Key Metrics [45 CFR 170.315(b)(11)(iv)(B)(6) (i-iv) & 45 CFR 170.315(b)(11)(iv)(B)(7) (i-v)]
     usefulness_metrics: Dict[str, str] = None
     fairness_metrics: Dict[str, str] = None
     safety_metrics: Dict[str, str] = None
+    
+    # Performance Metrics Detail
+    auroc_score: str = ""
+    accuracy_score: str = ""
+    sensitivity_score: str = ""
+    specificity_score: str = ""
+    f1_score: str = ""
+    human_ai_comparison: str = ""
+    test_set_issues: str = ""
+    
+    # External Validation
+    external_validation_process: str = ""
+    external_validation_party: str = ""
+    external_validation_measures: str = ""
+    external_validation_impact: str = ""
+    
+    # Quantitative Performance Measures
+    internal_validity: str = ""
+    internal_fairness: str = ""
+    external_validity: str = ""
+    external_fairness: str = ""
+    outcomes_impact: str = ""
+    
+    # Fairness & Equity Detail
+    subgroup_fairness: str = ""
+    demographic_fairness: str = ""
+    fairness_validation_process: str = ""
 
     # Resources
     evaluation_references: str = ""
@@ -109,6 +165,10 @@ class ModelCardData:
     peer_reviewed_publications: str = ""
     reimbursement_status: str = ""
     patient_consent_required: str = ""
+    fda_status: str = ""
+    privacy_security_protocols: str = ""
+    mobile_app_ratings: str = ""
+    publication_status: str = ""
 
     # Legacy fields for backward compatibility
     performance_metrics: Dict[str, Any] = None
@@ -139,7 +199,17 @@ class ModelCardData:
         if self.extraction_summary is None:
             self.extraction_summary = {}
         if self.subgroup_analysis is None:
-            self.subgroup_analysis = {}
+            self.subgroup_analysis = {
+                'fitzpatrick_scale': '',
+                'age_groups': '',
+                'sex_gender': '',
+                'lesion_types': '',
+                'geographical_regions': '',
+                'race_ethnicity': '',
+                'language': '',
+                'sexual_orientation': '',
+                'social_determinants': ''
+            }
         if self.usefulness_metrics is None:
             self.usefulness_metrics = {
                 'goal': '',

@@ -103,3 +103,24 @@ Preferred communication style: Simple, everyday language.
 - Real-time analysis and feedback
 - Manual entry options for incomplete automated discovery
 - Export capabilities for generated model cards
+
+## Recent Changes: Latest modifications with dates
+
+### 2025-07-16: Enhanced Compliance with 45 CFR 170.315
+- **Major Update**: Expanded ModelCardData class to include full compliance with 45 CFR 170.315 medical AI requirements
+- **Added 60+ new fields** covering all mandatory sections:
+  - Metadata with CFR reference tracking
+  - Uses & Directions with clinical workflow details
+  - Warnings with detailed risk assessment
+  - Trust Ingredients with AI system facts
+  - Development data with USCDI v3 variables
+  - Bias mitigation approaches
+  - Ongoing maintenance requirements
+  - Key metrics for usefulness, fairness, and safety
+  - Transparency information with funding sources
+  - Comprehensive resources section
+- **Enhanced Manual Entry**: Updated form to include all compliance fields with proper categorization
+- **Updated Display Logic**: Restructured model card display to show all sections with CFR references
+- **USCDI v3 Integration**: Added specific fields for race, ethnicity, language, sexual orientation, gender identity, social determinants
+- **Performance Metrics**: Added detailed performance tracking with AUROC, accuracy, sensitivity, specificity, F1 scores
+- **External Validation**: Added fields for external validation processes and measures

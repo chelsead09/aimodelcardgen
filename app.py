@@ -175,35 +175,125 @@ elif page == "Manual Entry":
     st.markdown("Manually create or edit a model card with custom information.")
     
     with st.form("manual_model_card"):
-        st.subheader("Basic Information")
+        st.subheader("1. Metadata [45 CFR 170.315 (b)(11)(iv)(B)(1)(i)]")
         
         col1, col2 = st.columns(2)
         with col1:
-            model_name = st.text_input("Model Name*", required=True)
+            model_name = st.text_input("Model Name*")
             developer_org = st.text_input("Developer Organization")
             model_version = st.text_input("Model Version")
             release_stage = st.selectbox("Release Stage", ["", "beta", "pilot", "full-version"])
+            contact_info = st.text_input("Contact Information")
+            regulatory_approval = st.text_input("Regulatory Approval (FDA, CE Mark, etc.)")
         
         with col2:
             initial_release = st.date_input("Initial Release Date", value=None)
             last_updated = st.date_input("Last Updated Date", value=None)
-            contact_info = st.text_input("Contact Information")
             geographic_availability = st.text_input("Geographic Availability")
+            clinical_oversight = st.text_input("Clinical Oversight")
+            dataset_doi = st.text_input("Dataset DOI")
+            
+        summary = st.text_area("Summary", height=100)
+        keywords = st.text_input("Keywords (comma-separated)")
         
-        st.subheader("Model Description")
+        st.subheader("2. Uses & Directions")
         model_description = st.text_area("Model Description", height=100)
         intended_use = st.text_area("Intended Use", height=100)
+        clinical_workflow = st.text_area("Clinical Workflow", height=100)
         
-        st.subheader("Bias and Risk Information")
+        col1, col2 = st.columns(2)
+        with col1:
+            primary_users = st.text_input("Primary Users")
+            how_to_use = st.text_input("How to Use")
+            targeted_patient_population = st.text_area("Targeted Patient Population", height=80)
+            human_oversight_required = st.text_area("Human Oversight Required", height=80)
+        
+        with col2:
+            inform_augment_replace = st.selectbox("Inform/Augment/Replace", ["", "inform", "augment", "replace"])
+            specific_use_cases = st.text_area("Specific Use Cases", height=80)
+            target_user_expertise = st.text_area("Target User Expertise", height=80)
+            cautioned_use_cases = st.text_area("Cautioned Use Cases", height=80)
+        
+        st.subheader("3. Warnings [45 CFR 170.315(b)(11)(iv)(B)(3) (i-ii)]")
         clinical_risk_level = st.selectbox("Clinical Risk Level", ["", "low", "medium", "high"])
         developer_warnings = st.text_area("Developer Warnings", height=100)
         known_biases = st.text_area("Known Biases", height=100)
         model_limitations = st.text_area("Model Limitations", height=100)
         
+        col1, col2 = st.columns(2)
+        with col1:
+            failure_modes = st.text_area("Failure Modes", height=80)
+            inappropriate_settings = st.text_area("Inappropriate Settings", height=80)
+        with col2:
+            contraindications = st.text_area("Contraindications", height=80)
+            dependency_requirements = st.text_area("Dependency Requirements", height=80)
+        
+        st.subheader("4. Trust Ingredients - AI System Facts")
+        col1, col2 = st.columns(2)
+        with col1:
+            model_type = st.selectbox("Model Type", ["", "predictive", "generative"])
+            system_interactions = st.text_area("System Interactions", height=80)
+            outcomes_outputs = st.text_area("Outcomes/Outputs", height=80)
+            explainability = st.text_area("Explainability", height=80)
+        
+        with col2:
+            foundation_models = st.text_input("Foundation Models")
+            input_data_source = st.text_input("Input Data Source")
+            output_input_data_type = st.text_input("Data Type")
+            real_world_or_synthetic = st.selectbox("Real-World/Synthetic", ["", "real-world", "synthetic", "mixed"])
+        
+        st.subheader("Development Data [45 CFR 170.315(b)(11)(iv)(B)(4) (i-iv)]")
+        col1, col2 = st.columns(2)
+        with col1:
+            dataset_size = st.text_input("Dataset Size")
+            annotation_process = st.text_area("Annotation Process", height=80)
+            dataset_transparency = st.selectbox("Dataset Transparency", ["", "public", "proprietary"])
+            validation_dataset_type = st.selectbox("Validation Dataset Type", ["", "real-world", "synthetic", "retrospective"])
+        
+        with col2:
+            data_collection_timeline = st.text_input("Data Collection Timeline")
+            data_collection_location = st.text_input("Data Collection Location")
+            skin_tone_diversity = st.text_area("Skin Tone Diversity", height=80)
+            ethical_review = st.selectbox("Ethical Review", ["", "Yes", "No"])
+            irb_approval = st.selectbox("IRB Approval", ["", "Yes", "No"])
+        
+        st.subheader("Bias Mitigation [45 CFR 170.315(b)(11)(iv)(B)(5) (i-ii)]")
+        bias_mitigation_approaches = st.text_area("Bias Mitigation Approaches", height=100)
+        fairness_approaches = st.text_area("Fairness Approaches", height=100)
+        
+        st.subheader("Key Metrics [45 CFR 170.315(b)(11)(iv)(B)(6) & (7)]")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            auroc_score = st.text_input("AUROC Score")
+            accuracy_score = st.text_input("Accuracy Score")
+        with col2:
+            sensitivity_score = st.text_input("Sensitivity Score")
+            specificity_score = st.text_input("Specificity Score")
+        with col3:
+            f1_score = st.text_input("F1 Score")
+            human_ai_comparison = st.text_input("Human-AI Comparison")
+        
+        st.subheader("Transparency Information [45 CFR 170.315 (b)(11)(iv)(B)(1)(ii)]")
+        col1, col2 = st.columns(2)
+        with col1:
+            funding_source = st.text_input("Funding Source")
+            technical_implementation_funding = st.text_input("Technical Implementation Funding")
+            stakeholders_consulted = st.text_area("Stakeholders Consulted", height=80)
+        with col2:
+            third_party_info = st.text_input("Third Party Information")
+            conflicts_of_interest = st.text_area("Conflicts of Interest", height=80)
+            patient_consent_required = st.selectbox("Patient Consent Required", ["", "Yes", "No", "Recommended"])
+        
         st.subheader("Resources")
-        github_repo = st.text_input("GitHub Repository URL")
-        huggingface_url = st.text_input("HuggingFace URL")
-        website_url = st.text_input("Website URL")
+        col1, col2 = st.columns(2)
+        with col1:
+            github_repo = st.text_input("GitHub Repository URL")
+            huggingface_url = st.text_input("HuggingFace URL")
+            website_url = st.text_input("Website URL")
+        with col2:
+            fda_status = st.selectbox("FDA Status", ["", "cleared", "in process", "investigational"])
+            peer_reviewed_publications = st.text_area("Peer Reviewed Publications", height=80)
+            reimbursement_status = st.text_input("Reimbursement Status")
         
         submit_button = st.form_submit_button("Create Model Card")
     
@@ -221,15 +311,67 @@ elif page == "Manual Entry":
                 last_updated_date=str(last_updated) if last_updated else "",
                 contact_info=contact_info,
                 geographic_availability=geographic_availability,
+                regulatory_approval=regulatory_approval,
+                summary=summary,
+                keywords=keywords,
+                clinical_oversight=clinical_oversight,
+                dataset_doi=dataset_doi,
                 model_description=model_description,
                 intended_use=intended_use,
+                clinical_workflow=clinical_workflow,
+                primary_users=primary_users,
+                how_to_use=how_to_use,
+                targeted_patient_population=targeted_patient_population,
+                human_oversight_required=human_oversight_required,
+                inform_augment_replace=inform_augment_replace,
+                specific_use_cases=specific_use_cases,
+                target_user_expertise=target_user_expertise,
+                cautioned_use_cases=cautioned_use_cases,
                 clinical_risk_level=clinical_risk_level,
                 developer_warnings=developer_warnings,
                 known_biases=known_biases,
                 model_limitations=model_limitations,
+                failure_modes=failure_modes,
+                inappropriate_settings=inappropriate_settings,
+                contraindications=contraindications,
+                dependency_requirements=dependency_requirements,
+                model_type=model_type,
+                system_interactions=system_interactions,
+                outcomes_outputs=outcomes_outputs,
+                explainability=explainability,
+                foundation_models=foundation_models,
+                input_data_source=input_data_source,
+                output_input_data_type=output_input_data_type,
+                real_world_or_synthetic=real_world_or_synthetic,
+                dataset_size=dataset_size,
+                annotation_process=annotation_process,
+                dataset_transparency=dataset_transparency,
+                validation_dataset_type=validation_dataset_type,
+                data_collection_timeline=data_collection_timeline,
+                data_collection_location=data_collection_location,
+                skin_tone_diversity=skin_tone_diversity,
+                ethical_review=ethical_review,
+                irb_approval=irb_approval,
+                bias_mitigation_approaches=bias_mitigation_approaches,
+                fairness_approaches=fairness_approaches,
+                auroc_score=auroc_score,
+                accuracy_score=accuracy_score,
+                sensitivity_score=sensitivity_score,
+                specificity_score=specificity_score,
+                f1_score=f1_score,
+                human_ai_comparison=human_ai_comparison,
+                funding_source=funding_source,
+                technical_implementation_funding=technical_implementation_funding,
+                stakeholders_consulted=stakeholders_consulted,
+                third_party_info=third_party_info,
+                conflicts_of_interest=conflicts_of_interest,
+                patient_consent_required=patient_consent_required,
                 github_repo=github_repo,
                 huggingface_url=huggingface_url,
-                website_url=website_url
+                website_url=website_url,
+                fda_status=fda_status,
+                peer_reviewed_publications=peer_reviewed_publications,
+                reimbursement_status=reimbursement_status
             )
             
             st.session_state.current_model_card = manual_card
