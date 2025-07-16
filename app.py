@@ -39,7 +39,7 @@ st.markdown("Discover, analyze, and generate comprehensive model cards for medic
 st.sidebar.title("Navigation")
 page = st.sidebar.selectbox(
     "Select Page",
-    ["Model Discovery", "Model Analysis", "Model Card Generation", "Manual Entry", "Help"]
+    ["Model Discovery", "Model Analysis", "Model Card Generation", "Website Analysis", "Manual Entry", "Help"]
 )
 
 if page == "Model Discovery":
@@ -135,15 +135,16 @@ elif page == "Model Analysis":
             display_source_analysis(st.session_state.current_analysis)
             
             # Generate model card button
+            st.subheader("Generate Model Card")
+            model_name_for_card = st.text_input("Enter model name for card generation:", key="model_name_for_card")
+            
             if st.button("🏗️ Generate Model Card", type="primary"):
-                # Need model name for generation
-                if 'model_name' not in st.session_state:
-                    st.session_state.model_name = st.text_input("Enter model name for card generation:")
-                
-                if st.session_state.get('model_name'):
+                if not model_name_for_card:
+                    st.error("Please enter a model name for card generation")
+                else:
                     with st.spinner("Generating model card..."):
                         st.session_state.current_model_card = st.session_state.pipeline.generate_model_card(
-                            st.session_state.model_name,
+                            model_name_for_card,
                             st.session_state.current_sources,
                             st.session_state.current_analysis
                         )
@@ -169,6 +170,175 @@ elif page == "Model Card Generation":
         
         with col2:
             create_download_button(st.session_state.current_model_card, 'markdown')
+
+elif page == "Website Analysis":
+    st.header("🌐 Website Analysis")
+    st.markdown("Analyze a website URL to check model card accuracy and extract relevant information.")
+    
+    # Website URL input
+    with st.form("website_analysis_form"):
+        website_url = st.text_input(
+            "Enter Website URL",
+            placeholder="https://example.com/model-page",
+            help="Enter the URL of a website containing model information"
+        )
+        
+        st.subheader("Analysis Options")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            check_bias_indicators = st.checkbox("Check for bias indicators", value=True)
+            check_diversity_mentions = st.checkbox("Check for diversity mentions", value=True)
+        
+        with col2:
+            check_compliance = st.checkbox("Check CFR compliance", value=True)
+            extract_metrics = st.checkbox("Extract performance metrics", value=True)
+        
+        analyze_button = st.form_submit_button("🔍 Analyze Website")
+    
+    # Handle analysis
+    if analyze_button:
+        if not website_url:
+            st.error("Please enter a valid website URL")
+        else:
+            with st.spinner("Analyzing website..."):
+                # Scrape website content
+                scraped_data = st.session_state.pipeline.scraper.scrape_website(website_url)
+                
+                if not scraped_data:
+                    st.error("Failed to scrape website content. Please check the URL and try again.")
+                else:
+                    st.success("Website content successfully extracted!")
+                    
+                    # Display extracted content
+                    st.subheader("📄 Extracted Content")
+                    with st.expander("Website Content", expanded=False):
+                        st.markdown(f"**Title**: {scraped_data.get('title', 'N/A')}")
+                        st.markdown(f"**Description**: {scraped_data.get('description', 'N/A')}")
+                        st.markdown(f"**URL**: {scraped_data.get('url', 'N/A')}")
+                        st.text_area("Content Preview", value=scraped_data.get('content', '')[:1000] + "...", height=200)
+                    
+                    # Perform bias analysis if requested
+                    if check_bias_indicators or check_diversity_mentions:
+                        st.subheader("🔍 Bias Analysis")
+                        content = scraped_data.get('content', '')
+                        bias_analysis = st.session_state.pipeline.extract_bias_indicators(content)
+                        
+                        # Display bias risk level
+                        risk_level = bias_analysis.get('bias_risk_level', 'unknown')
+                        if risk_level == 'high':
+                            st.error(f"🔴 High Bias Risk Detected")
+                        elif risk_level == 'medium':
+                            st.warning(f"🟡 Medium Bias Risk Detected")
+                        else:
+                            st.success(f"🟢 Low Bias Risk")
+                        
+                        # Display diversity mentions
+                        if check_diversity_mentions:
+                            diversity_mentions = bias_analysis.get('diversity_mentions', [])
+                            if diversity_mentions:
+                                st.markdown("**Diversity Mentions Found:**")
+                                for mention in diversity_mentions[:5]:  # Show first 5
+                                    st.markdown(f"- **{mention['keyword']}**: {mention['context'][:150]}...")
+                            else:
+                                st.warning("No diversity mentions found in the content")
+                        
+                        # Display bias indicators
+                        if check_bias_indicators:
+                            bias_indicators = bias_analysis.get('bias_indicators', [])
+                            if bias_indicators:
+                                st.markdown("**Bias Indicators Found:**")
+                                for indicator in bias_indicators[:5]:  # Show first 5
+                                    st.markdown(f"- **{indicator['indicator']}**: {indicator['context'][:150]}...")
+                            else:
+                                st.info("No specific bias indicators found in the content")
+                    
+                    # Extract performance metrics if requested
+                    if extract_metrics:
+                        st.subheader("📊 Performance Metrics")
+                        content = scraped_data.get('content', '')
+                        
+                        # Look for common performance metrics
+                        metrics_patterns = {
+                            'AUROC': r'AUC|AUROC|Area Under.*Curve',
+                            'Accuracy': r'accuracy|acc',
+                            'Sensitivity': r'sensitivity|recall|true positive rate',
+                            'Specificity': r'specificity|true negative rate',
+                            'Precision': r'precision|positive predictive value',
+                            'F1 Score': r'F1|F-score|F1-score'
+                        }
+                        
+                        found_metrics = {}
+                        for metric_name, pattern in metrics_patterns.items():
+                            matches = re.findall(rf'{pattern}[:\s=]*(\d+\.?\d*%?)', content, re.IGNORECASE)
+                            if matches:
+                                found_metrics[metric_name] = matches[:3]  # First 3 matches
+                        
+                        if found_metrics:
+                            st.markdown("**Performance Metrics Found:**")
+                            for metric, values in found_metrics.items():
+                                st.markdown(f"- **{metric}**: {', '.join(values)}")
+                        else:
+                            st.info("No performance metrics found in the content")
+                    
+                    # Check CFR compliance if requested
+                    if check_compliance:
+                        st.subheader("📋 CFR Compliance Check")
+                        content = scraped_data.get('content', '')
+                        
+                        # Check for compliance keywords
+                        compliance_keywords = {
+                            'Clinical Oversight': r'clinical oversight|dermatologist|clinician involvement',
+                            'Bias Mitigation': r'bias mitigation|fairness|equity|demographic',
+                            'Regulatory Approval': r'FDA|CE mark|regulatory approval',
+                            'Validation': r'validation|testing|evaluation',
+                            'Monitoring': r'monitoring|maintenance|updates',
+                            'Transparency': r'transparency|funding|conflict of interest'
+                        }
+                        
+                        compliance_found = {}
+                        for category, pattern in compliance_keywords.items():
+                            matches = re.findall(rf'([^.]*{pattern}[^.]*)', content, re.IGNORECASE)
+                            if matches:
+                                compliance_found[category] = matches[:2]  # First 2 matches
+                        
+                        if compliance_found:
+                            st.markdown("**CFR Compliance Elements Found:**")
+                            for category, matches in compliance_found.items():
+                                st.markdown(f"**{category}:**")
+                                for match in matches:
+                                    st.markdown(f"  - {match.strip()[:200]}...")
+                        else:
+                            st.warning("Limited CFR compliance information found")
+                    
+                    # Generate model card from website data
+                    st.subheader("🏗️ Generate Model Card from Website")
+                    if st.button("Generate Model Card from Website Data", type="primary"):
+                        with st.spinner("Generating model card from website data..."):
+                            # Create a basic model card from scraped data
+                            website_model_card = ModelCardData(
+                                model_name=scraped_data.get('title', 'Unknown Model'),
+                                model_description=scraped_data.get('description', ''),
+                                website_url=website_url,
+                                sources_extracted_from=['website'],
+                                extraction_summary={'website_analysis': bias_analysis if 'bias_analysis' in locals() else {}}
+                            )
+                            
+                            # Add extracted metrics if found
+                            if 'found_metrics' in locals() and found_metrics:
+                                website_model_card.auroc_score = ', '.join(found_metrics.get('AUROC', []))
+                                website_model_card.accuracy_score = ', '.join(found_metrics.get('Accuracy', []))
+                                website_model_card.sensitivity_score = ', '.join(found_metrics.get('Sensitivity', []))
+                                website_model_card.specificity_score = ', '.join(found_metrics.get('Specificity', []))
+                                website_model_card.f1_score = ', '.join(found_metrics.get('F1 Score', []))
+                            
+                            # Add bias analysis results
+                            if 'bias_analysis' in locals():
+                                website_model_card.clinical_risk_level = bias_analysis.get('bias_risk_level', 'unknown')
+                                website_model_card.known_biases = str(bias_analysis.get('bias_indicators', []))
+                            
+                            st.session_state.current_model_card = website_model_card
+                            st.success("Model card generated from website data! Go to 'Model Card Generation' page to view and download.")
 
 elif page == "Manual Entry":
     st.header("✏️ Manual Model Card Entry")
@@ -413,7 +583,13 @@ elif page == "Help":
     - Review all sections including bias analysis and risk assessment
     - Download the model card in JSON or Markdown format
     
-    ### 4. Manual Entry
+    ### 4. Website Analysis
+    - Analyze any website URL to check model card accuracy
+    - Extract performance metrics and bias indicators
+    - Check CFR compliance elements
+    - Generate model cards from website content
+    
+    ### 5. Manual Entry
     - Create model cards manually when automated discovery isn't sufficient
     - Fill in all relevant information about your model
     - Generate and download the completed model card
