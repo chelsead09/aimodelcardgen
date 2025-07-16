@@ -106,6 +106,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes: Latest modifications with dates
 
+### 2025-07-16: Model Card Evaluation Feature Added
+- **New Feature**: Added comprehensive Model Card Evaluation page for accuracy assessment
+- **Input Methods**: Support for text input, JSON upload, and URL/website fetching
+- **Automated Discovery**: Uses CardGen pipeline to discover reference information about models
+- **Accuracy Assessment**: Compares input model cards against discovered information from multiple sources
+- **Detailed Analysis**: Field-by-field comparison with coverage percentages and missing field detection
+- **Evaluation Reports**: Downloadable JSON reports with accuracy scores and recommendations
+- **Side-by-Side Comparison**: Detailed comparison view for specific fields
+- **User Experience**: Progress tracking and comprehensive results display
+- **Enhanced Functionality**: Now supports both model card generation AND evaluation workflows
+
+### 2025-07-16: Enhanced Model Card Generation with Detailed Content
+- **Comprehensive Enhancement**: Added 11 detailed generation methods for comprehensive field coverage
+- **Expanded Uses & Directions**: Detailed intended use, clinical workflow, primary users, how-to-use instructions
+- **Enhanced Warnings**: Comprehensive bias considerations, clinical risk assessment, and limitations
+- **Technical Specifications**: Detailed model type, data sources, and development data characterization
+- **Bias Mitigation**: Extensive bias mitigation approaches and ongoing maintenance descriptions
+- **Professional Content**: Clinically relevant, professional-grade content for all major model card sections
+- **Improved User Experience**: Much more detailed and comprehensive model card generation
+
 ### 2025-07-16: CardGen Pipeline Implementation with CHAI Schema
 - **Revolutionary Update**: Implemented fully automated CardGen pipeline method
 - **CHAI Schema Integration**: Added complete CHAI Applied Model Card schema v0.1 for HTI-1 and OCR compliance

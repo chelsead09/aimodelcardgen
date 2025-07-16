@@ -43,7 +43,7 @@ st.markdown("Discover, analyze, and generate comprehensive model cards for medic
 st.sidebar.title("Navigation")
 page = st.sidebar.selectbox(
     "Select Page",
-    ["CardGen Pipeline", "Model Discovery", "Model Analysis", "Model Card Generation", "Website Analysis", "Manual Entry", "Help"]
+    ["CardGen Pipeline", "Model Card Evaluation", "Model Discovery", "Model Analysis", "Model Card Generation", "Website Analysis", "Manual Entry", "Help"]
 )
 
 if page == "CardGen Pipeline":
@@ -277,6 +277,375 @@ if page == "CardGen Pipeline":
                 file_name=f"{chai_card.model_name}_chai_model_card.xml",
                 mime="application/xml"
             )
+
+elif page == "Model Card Evaluation":
+    st.header("📊 Model Card Evaluation - Accuracy Assessment")
+    st.markdown("""
+    **Evaluate Existing AI Model Cards for Accuracy**
+    
+    This tool allows you to:
+    1. **Input** an existing AI model card (JSON, text, or URL)
+    2. **Discover** information from multiple sources about the model
+    3. **Compare** the input card against discovered information
+    4. **Generate** an accuracy assessment report
+    
+    Enter your model card and the model name to begin evaluation.
+    """)
+    
+    # Model card input section
+    st.subheader("📋 Input Model Card")
+    
+    input_method = st.radio(
+        "How would you like to provide the model card?",
+        ["Text Input", "JSON Upload", "URL/Website"]
+    )
+    
+    model_card_input = None
+    model_name_for_eval = None
+    
+    if input_method == "Text Input":
+        model_card_input = st.text_area(
+            "Paste the model card content here",
+            height=300,
+            placeholder="Paste the complete model card content here..."
+        )
+        model_name_for_eval = st.text_input(
+            "Model Name (for discovery)",
+            placeholder="e.g., DermNet, SkinVision, MelanomaNet"
+        )
+    
+    elif input_method == "JSON Upload":
+        uploaded_file = st.file_uploader(
+            "Upload model card JSON file",
+            type=['json', 'txt'],
+            accept_multiple_files=False
+        )
+        
+        if uploaded_file is not None:
+            try:
+                content = uploaded_file.read().decode('utf-8')
+                model_card_input = content
+                
+                # Try to extract model name from JSON
+                try:
+                    json_data = json.loads(content)
+                    model_name_for_eval = json_data.get('model_name', json_data.get('name', ''))
+                except:
+                    model_name_for_eval = ""
+                
+                st.success(f"File uploaded successfully ({len(content)} characters)")
+                
+            except Exception as e:
+                st.error(f"Error reading file: {str(e)}")
+        
+        if not model_name_for_eval:
+            model_name_for_eval = st.text_input(
+                "Model Name (for discovery)",
+                placeholder="e.g., DermNet, SkinVision, MelanomaNet"
+            )
+    
+    elif input_method == "URL/Website":
+        url_input = st.text_input(
+            "Enter URL of model card or documentation",
+            placeholder="https://example.com/model-card"
+        )
+        
+        model_name_for_eval = st.text_input(
+            "Model Name (for discovery)",
+            placeholder="e.g., DermNet, SkinVision, MelanomaNet"
+        )
+        
+        if url_input and st.button("🔍 Fetch from URL"):
+            try:
+                import requests
+                from bs4 import BeautifulSoup
+                import trafilatura
+                
+                # Fetch content from URL
+                response = requests.get(url_input, timeout=10)
+                response.raise_for_status()
+                
+                # Extract text content
+                downloaded = response.text
+                model_card_input = trafilatura.extract(downloaded)
+                
+                if model_card_input:
+                    st.success(f"Content fetched successfully ({len(model_card_input)} characters)")
+                    
+                    # Preview the content
+                    with st.expander("Preview fetched content"):
+                        st.text_area("Content preview", model_card_input[:1000] + "..." if len(model_card_input) > 1000 else model_card_input, height=200)
+                else:
+                    st.error("Could not extract meaningful content from the URL")
+                    
+            except Exception as e:
+                st.error(f"Error fetching URL: {str(e)}")
+    
+    # Evaluation section
+    if model_card_input and model_name_for_eval:
+        st.markdown("---")
+        st.subheader("🔍 Model Card Evaluation")
+        
+        if st.button("🚀 Start Evaluation", type="primary"):
+            try:
+                # Create progress indicators
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # Create containers for results
+                discovery_status = st.empty()
+                comparison_status = st.empty()
+                accuracy_status = st.empty()
+                
+                async def run_evaluation_pipeline():
+                    # Initialize CardGen pipeline
+                    pipeline = CardGenPipeline()
+                    
+                    async with pipeline:
+                        # Step 1: Discover information about the model
+                        status_text.text("🔍 Discovering information about the model...")
+                        progress_bar.progress(20)
+                        
+                        discovered_sources = await pipeline.discover_model_sources(model_name_for_eval)
+                        
+                        # Display discovery results
+                        with discovery_status.container():
+                            st.subheader("📊 Discovery Results")
+                            
+                            total_sources = sum(len(sources) for sources in discovered_sources.values())
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                st.metric("HuggingFace", len(discovered_sources.get('huggingface', [])))
+                            
+                            with col2:
+                                st.metric("GitHub", len(discovered_sources.get('github', [])))
+                            
+                            with col3:
+                                st.metric("PubMed", len(discovered_sources.get('pubmed', [])))
+                            
+                            with col4:
+                                st.metric("Total Sources", total_sources)
+                        
+                        progress_bar.progress(40)
+                        
+                        # Step 2: Extract content from discovered sources
+                        status_text.text("📝 Extracting content from discovered sources...")
+                        progress_bar.progress(60)
+                        
+                        extracted_content = await pipeline.extract_content_from_sources(discovered_sources)
+                        
+                        progress_bar.progress(80)
+                        
+                        # Step 3: Generate reference model card from discovered information
+                        status_text.text("🏗️ Generating reference model card...")
+                        reference_card = await pipeline.generate_chai_model_card(model_name_for_eval, extracted_content)
+                        
+                        progress_bar.progress(100)
+                        status_text.text("✅ Evaluation completed successfully!")
+                        
+                        return reference_card, extracted_content
+                
+                # Run the evaluation
+                reference_card, extracted_content = asyncio.run(run_evaluation_pipeline())
+                
+                # Store in session state
+                st.session_state.evaluation_results = {
+                    'input_card': model_card_input,
+                    'reference_card': reference_card,
+                    'extracted_content': extracted_content,
+                    'model_name': model_name_for_eval
+                }
+                
+                # Step 4: Compare and analyze
+                st.subheader("📊 Accuracy Assessment")
+                
+                # Create comparison analysis
+                def analyze_accuracy(input_text, reference_card, extracted_content):
+                    """Analyze accuracy of input model card against reference"""
+                    
+                    # Key fields to compare
+                    comparison_fields = {
+                        'Intended Use': reference_card.intended_use_and_workflow,
+                        'Primary Users': reference_card.primary_intended_users,
+                        'How to Use': reference_card.how_to_use,
+                        'Targeted Population': reference_card.targeted_patient_population,
+                        'Risks and Limitations': reference_card.known_risks_and_limitations,
+                        'Bias Considerations': reference_card.known_biases_or_ethical_considerations,
+                        'Model Type': reference_card.model_type,
+                        'Data Source': reference_card.input_data_source,
+                        'Development Data': reference_card.development_data_characterization
+                    }
+                    
+                    # Simple text similarity analysis
+                    accuracy_scores = {}
+                    missing_fields = []
+                    
+                    input_lower = input_text.lower()
+                    
+                    for field, reference_content in comparison_fields.items():
+                        if not reference_content or reference_content.strip() == "":
+                            accuracy_scores[field] = "No reference data available"
+                            continue
+                        
+                        # Extract key terms from reference
+                        ref_terms = set(re.findall(r'\b\w+\b', reference_content.lower()))
+                        ref_terms = {term for term in ref_terms if len(term) > 3}  # Filter short words
+                        
+                        # Check presence in input
+                        found_terms = sum(1 for term in ref_terms if term in input_lower)
+                        
+                        if len(ref_terms) > 0:
+                            similarity = found_terms / len(ref_terms)
+                            accuracy_scores[field] = f"{similarity:.2%}"
+                        else:
+                            accuracy_scores[field] = "Unable to assess"
+                        
+                        # Check if field seems to be missing entirely
+                        field_keywords = {
+                            'Intended Use': ['intended', 'use', 'purpose', 'designed'],
+                            'Primary Users': ['users', 'physicians', 'doctors', 'clinicians'],
+                            'Risks and Limitations': ['risk', 'limitation', 'warning', 'caution'],
+                            'Bias Considerations': ['bias', 'fairness', 'demographic', 'equity']
+                        }
+                        
+                        if field in field_keywords:
+                            keywords = field_keywords[field]
+                            if not any(keyword in input_lower for keyword in keywords):
+                                missing_fields.append(field)
+                    
+                    return accuracy_scores, missing_fields
+                
+                accuracy_scores, missing_fields = analyze_accuracy(model_card_input, reference_card, extracted_content)
+                
+                # Display results
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("### 📈 Field Coverage Analysis")
+                    for field, score in accuracy_scores.items():
+                        if score.endswith('%'):
+                            score_float = float(score.replace('%', '')) / 100
+                            if score_float >= 0.7:
+                                st.success(f"**{field}**: {score}")
+                            elif score_float >= 0.4:
+                                st.warning(f"**{field}**: {score}")
+                            else:
+                                st.error(f"**{field}**: {score}")
+                        else:
+                            st.info(f"**{field}**: {score}")
+                
+                with col2:
+                    st.markdown("### ⚠️ Missing or Incomplete Fields")
+                    if missing_fields:
+                        for field in missing_fields:
+                            st.error(f"- {field}")
+                    else:
+                        st.success("All key fields appear to be present!")
+                
+                # Overall assessment
+                st.markdown("### 🎯 Overall Assessment")
+                
+                numeric_scores = [float(score.replace('%', '')) / 100 for score in accuracy_scores.values() if score.endswith('%')]
+                
+                if numeric_scores:
+                    overall_score = sum(numeric_scores) / len(numeric_scores)
+                    
+                    if overall_score >= 0.7:
+                        st.success(f"**Overall Accuracy**: {overall_score:.1%} - High accuracy")
+                    elif overall_score >= 0.5:
+                        st.warning(f"**Overall Accuracy**: {overall_score:.1%} - Moderate accuracy")
+                    else:
+                        st.error(f"**Overall Accuracy**: {overall_score:.1%} - Low accuracy")
+                else:
+                    st.info("Overall accuracy could not be determined due to insufficient reference data")
+                
+                # Recommendations
+                st.markdown("### 💡 Recommendations")
+                
+                recommendations = []
+                
+                if missing_fields:
+                    recommendations.append("Add missing fields: " + ", ".join(missing_fields))
+                
+                if numeric_scores:
+                    low_scoring_fields = [field for field, score in accuracy_scores.items() 
+                                        if score.endswith('%') and float(score.replace('%', '')) < 50]
+                    if low_scoring_fields:
+                        recommendations.append("Improve detail in: " + ", ".join(low_scoring_fields))
+                
+                if not recommendations:
+                    recommendations.append("Model card appears to be comprehensive and accurate")
+                
+                for rec in recommendations:
+                    st.markdown(f"- {rec}")
+                
+                # Download evaluation report
+                st.markdown("### 💾 Download Evaluation Report")
+                
+                evaluation_report = {
+                    "model_name": model_name_for_eval,
+                    "evaluation_timestamp": datetime.now().isoformat(),
+                    "input_card_length": len(model_card_input),
+                    "accuracy_scores": accuracy_scores,
+                    "missing_fields": missing_fields,
+                    "overall_score": overall_score if numeric_scores else None,
+                    "recommendations": recommendations,
+                    "reference_sources": len(extracted_content.get('sources', [])) if extracted_content else 0
+                }
+                
+                st.download_button(
+                    label="📊 Download Evaluation Report",
+                    data=json.dumps(evaluation_report, indent=2),
+                    file_name=f"{model_name_for_eval}_evaluation_report.json",
+                    mime="application/json"
+                )
+                
+                # Comparison view
+                st.markdown("### 🔍 Detailed Comparison")
+                
+                comparison_field = st.selectbox(
+                    "Select field to compare in detail",
+                    list(accuracy_scores.keys())
+                )
+                
+                if comparison_field:
+                    reference_content = getattr(reference_card, comparison_field.lower().replace(' ', '_').replace('targeted_population', 'targeted_patient_population'), "")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown(f"**Input Model Card - {comparison_field}**")
+                        # Extract relevant section from input
+                        input_section = "Section not clearly identified in input"
+                        st.text_area("Input content", input_section, height=200)
+                    
+                    with col2:
+                        st.markdown(f"**Reference from Discovery - {comparison_field}**")
+                        st.text_area("Reference content", reference_content[:1000] + "..." if len(reference_content) > 1000 else reference_content, height=200)
+                
+            except Exception as e:
+                st.error(f"Error during evaluation: {str(e)}")
+                st.exception(e)
+    
+    # Show previous evaluation results if available
+    if 'evaluation_results' in st.session_state:
+        st.markdown("---")
+        st.subheader("📋 Previous Evaluation Results")
+        
+        results = st.session_state.evaluation_results
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Model Evaluated", results['model_name'])
+        
+        with col2:
+            st.metric("Input Length", f"{len(results['input_card'])} chars")
+        
+        with col3:
+            st.metric("Sources Found", results.get('reference_sources', 0))
 
 elif page == "Model Discovery":
     st.header("🔍 Model Discovery")
